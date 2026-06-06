@@ -107,7 +107,7 @@ export async function importClosetData(
   console.log("[import] Images found:", imageFiles.size);
 
   // 5. Import items (first 50 for quick test)
-  const clothingList = (data.clothings || []).slice(0, 50); // LIMIT TO 50 FOR TESTING
+  const clothingList = data.clothings || [];
   let count = 0;
 
   for (let i = 0; i < clothingList.length; i++) {
