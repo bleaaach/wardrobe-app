@@ -3,10 +3,27 @@
   "version": "1.0.0",
   "main": "index.ts",
   "dependencies": {
+    "@expo/vector-icons": "^15.1.1",
+    "@tailwindcss/postcss": "^4.3.0",
     "expo": "~56.0.9",
+    "expo-file-system": "^56.0.7",
+    "expo-image-picker": "^56.0.16",
+    "expo-router": "^56.2.9",
+    "expo-sharing": "^56.0.16",
+    "expo-sqlite": "^56.0.4",
     "expo-status-bar": "~56.0.4",
+    "nativewind": "^4.2.5",
     "react": "19.2.3",
-    "react-native": "0.85.3"
+    "react-dom": "19.2.3",
+    "react-native": "0.85.3",
+    "react-native-gesture-handler": "^3.0.0",
+    "react-native-reanimated": "^4.4.1",
+    "react-native-safe-area-context": "^5.8.0",
+    "react-native-screens": "^4.25.2",
+    "react-native-web": "^0.21.2",
+    "tailwindcss": "^4.3.0",
+    "uuid": "^14.0.0",
+    "zustand": "^5.0.14"
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
