@@ -141,20 +141,11 @@ export async function importClosetData(
 
       const subName = subCatMap.get((c.categoryUUID || "").toUpperCase());
       const categoryId = mapCategory(subName);
-
-      // Build notes with all metadata
-      const metaParts: string[] = [];
       const brand = brandMap.get((c.brandUUID || "").toUpperCase()) || "";
-      const location = locationMap.get((c.locationUUID || "").toUpperCase()) || "";
-      const size = sizeMap.get((c.clothingSizeUUID || "").toUpperCase()) || sizeMap.get((c.shoeSizeUUID || "").toUpperCase()) || "";
-      const price = c.price ? `¥${c.price}` : "";
-      if (brand) metaParts.push(`品牌:${brand}`);
-      if (size) metaParts.push(`尺码:${size}`);
-      if (price) metaParts.push(price);
-      if (location) metaParts.push(`存放:${location}`);
-      if (c.comment_) metaParts.push(c.comment_);
-      if (c.purchaseDate) metaParts.push(`购买:${c.purchaseDate}`);
-      if (c.wearsTotal) metaParts.push(`穿着${c.wearsTotal}次`);
+      const loc = locationMap.get((c.locationUUID || "").toUpperCase()) || "";
+      const cSize = sizeMap.get((c.clothingSizeUUID || "").toUpperCase()) || "";
+      const sSize = sizeMap.get((c.shoeSizeUUID || "").toUpperCase()) || "";
+      const itemPrice = c.price ? String(c.price) : "";
 
       await addClothing({
         categoryId,
@@ -163,7 +154,14 @@ export async function importClosetData(
         brand,
         color: c.primaryColorHex || "",
         season: mapSeason(c.season),
-        notes: metaParts.join(" | "),
+        location: loc,
+        clothingSize: cSize,
+        shoeSize: sSize,
+        price: itemPrice,
+        purchaseLink: c.purchaseLink_ || c.purchaseLinkString_ || "",
+        tags: "[]",
+        wearCount: c.wearsTotal || 0,
+        notes: c.comment_ || "",
       });
 
       count++;

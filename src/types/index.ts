@@ -23,14 +23,21 @@ export interface Clothing {
   name: string;
   imageUri: string;
   imageNoBgUri?: string;
-  brand?: string;
-  color?: string;
-  season?: string;
-  notes?: string;
-  favorite: number; // 0 or 1
+  brand: string;
+  color: string;
+  season: string;
+  location: string;       // 存放位置
+  clothingSize: string;    // 服装尺码
+  shoeSize: string;        // 鞋码
+  price: string;           // 价格
+  purchaseLink: string;    // 购买链接
+  tags: string;            // JSON array of tag strings
+  wearCount: number;       // 穿着次数
+  notes: string;
+  favorite: number;
   createdAt: string;
   updatedAt: string;
-  deleted: number; // 0 or 1
+  deleted: number;
 }
 
 // ============ 搭配 ============

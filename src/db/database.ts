@@ -57,11 +57,12 @@ export async function getClothingById(id: string): Promise<Clothing | null> {
   return items.find((i) => i.id === id) || null;
 }
 
-export async function addClothing(data: Omit<Clothing, "id" | "createdAt" | "updatedAt" | "deleted" | "favorite">): Promise<Clothing> {
+export async function addClothing(data: Omit<Clothing, "id" | "createdAt" | "updatedAt" | "deleted" | "favorite"> & {favorite?: number}): Promise<Clothing> {
   const items = await getAllClothing();
   const id = Date.now().toString(36) + Math.random().toString(36).slice(2);
   const now = new Date().toISOString();
-  const item: Clothing = { ...data, id, favorite: 0, createdAt: now, updatedAt: now, deleted: 0 };
+  const defaults = { brand:"", color:"", season:"", location:"", clothingSize:"", shoeSize:"", price:"", purchaseLink:"", tags:"[]", wearCount:0, notes:"" };
+  const item: Clothing = { ...defaults, ...data, id, favorite: 0, createdAt: now, updatedAt: now, deleted: 0 };
   items.unshift(item);
   await setJson(STORAGE_KEYS.clothing, items);
   return item;

@@ -9,6 +9,8 @@ import { Colors, Spacing, Radius, FontSize, TouchMin, PressedOpacity } from "../
 
 const COLORS = ["红","橙","黄","绿","蓝","紫","黑","白","灰","棕","粉","银","金"];
 const SEASONS = ["春","夏","秋","冬"];
+const SIZES = ["XXS","XS","S","M","L","XL","XXL","XXXL"];
+const SHOE_SIZES = Array.from({length:20},(_,i)=>String(35+i));
 
 export default function ClothingDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -24,18 +26,30 @@ export default function ClothingDetail() {
   const [brand, setBrand] = useState("");
   const [color, setColor] = useState("");
   const [season, setSeason] = useState("");
+  const [location, setLocation] = useState("");
+  const [clothingSize, setClothingSize] = useState("");
+  const [shoeSize, setShoeSize] = useState("");
+  const [price, setPrice] = useState("");
+  const [purchaseLink, setPurchaseLink] = useState("");
+  const [tagsStr, setTagsStr] = useState("");
   const [notes, setNotes] = useState("");
 
   useEffect(() => {
-    if (item) { setName(item.name||""); setCatId(item.categoryId||""); setBrand(item.brand||""); setColor(item.color||""); setSeason(item.season||""); setNotes(item.notes||""); }
+    if (!item) return;
+    setName(item.name||""); setCatId(item.categoryId||""); setBrand(item.brand||"");
+    setColor(item.color||""); setSeason(item.season||""); setLocation(item.location||"");
+    setClothingSize(item.clothingSize||""); setShoeSize(item.shoeSize||""); setPrice(item.price||"");
+    setPurchaseLink(item.purchaseLink||""); setTagsStr(item.tags||"[]"); setNotes(item.notes||"");
   }, [item?.id]);
 
   if (!item) return <View style={S.centered}><Text style={{color:Colors.textTertiary}}>不存在</Text></View>;
 
   const cat = categories.find((c) => c.id === catId);
+  const wearCount = item.wearCount || 0;
+  const costPerWear = price && wearCount > 0 ? (parseFloat(price)/wearCount).toFixed(2) : "-";
 
   const save = async () => {
-    await updateItem(id!, { name, categoryId: catId, brand, color, season, notes });
+    await updateItem(id!, { name, categoryId: catId, brand, color, season, location, clothingSize, shoeSize, price, purchaseLink, tags: tagsStr, notes });
     setEditing(false);
   };
 
@@ -44,6 +58,23 @@ export default function ClothingDetail() {
     setSeason(parts.includes(s) ? parts.filter(p=>p!==s).join("/") : [...parts, s].join("/"));
   };
 
+  const Field = ({ label, value, children }: {label:string, value?:string, children?:any}) => (
+    <View style={S.fieldWrap}>
+      <Text style={S.label}>{label}</Text>
+      {editing && children ? children : <Text style={S.value}>{value || "未设置"}</Text>}
+    </View>
+  );
+
+  const ChipGroup = ({ options, selected, onToggle }: {options:string[], selected:string, onToggle:(v:string)=>void}) => (
+    <View style={S.chips}>
+      {options.map((o) => (
+        <Pressable key={o} style={[S.chip, selected.includes(o)&&S.chipActive]} onPress={()=>onToggle(o)}>
+          <Text style={[S.chipText, selected.includes(o)&&S.chipActiveText]}>{o}</Text>
+        </Pressable>
+      ))}
+    </View>
+  );
+
   return (
     <ScrollView style={S.container} contentContainerStyle={S.content} showsVerticalScrollIndicator={false}>
       <View style={S.imageWrap}>
@@ -51,16 +82,8 @@ export default function ClothingDetail() {
         <View style={S.overlayActions}>
           <IconButton name="close" onPress={() => router.back()} />
           <View style={{ flexDirection: "row", gap: 8 }}>
-            <IconButton
-              name={item.favorite ? "heart" : "heart-outline"}
-              color={item.favorite ? Colors.danger : Colors.textPrimary}
-              onPress={() => updateItem(id!, { favorite: item.favorite ? 0 : 1 })}
-            />
-            <IconButton
-              name={editing ? "checkmark" : "create-outline"}
-              color={editing ? Colors.accent : Colors.textPrimary}
-              onPress={() => editing ? save() : setEditing(true)}
-            />
+            <IconButton name={item.favorite ? "heart" : "heart-outline"} color={item.favorite ? Colors.danger : Colors.textPrimary} onPress={() => updateItem(id!, { favorite: item.favorite ? 0 : 1 })} />
+            <IconButton name={editing ? "checkmark" : "create-outline"} color={editing ? Colors.accent : Colors.textPrimary} onPress={() => editing ? save() : setEditing(true)} />
           </View>
         </View>
       </View>
@@ -70,79 +93,61 @@ export default function ClothingDetail() {
         {editing ? (
           <TextInput style={S.input} value={name} onChangeText={setName} placeholder="名称" placeholderTextColor={Colors.textTertiary} />
         ) : (
-          <Text style={S.name}>{name || "未命名"}</Text>
-        )}
-        {!editing && <Text style={S.cat}>{cat?.icon} {cat?.name}</Text>}
-
-        {/* Category (edit only) */}
-        {editing && (
           <>
-            <Text style={S.label}>分类</Text>
-            <View style={S.chips}>
-              {categories.map((c) => (
-                <Pressable key={c.id} style={[S.chip, catId===c.id&&S.chipActive]} onPress={()=>setCatId(c.id)}>
-                  <Text style={[S.chipText, catId===c.id&&S.chipActiveText]}>{c.icon} {c.name}</Text>
-                </Pressable>
-              ))}
-            </View>
+            <Text style={S.name}>{name || "未命名"}</Text>
+            <Text style={S.cat}>{cat?.icon} {cat?.name}</Text>
           </>
         )}
 
-        {/* Brand */}
-        <Text style={S.label}>品牌</Text>
-        {editing ? (
-          <TextInput style={S.input} value={brand} onChangeText={setBrand} placeholder="如：Nike" placeholderTextColor={Colors.textTertiary} />
-        ) : (
-          <Text style={S.value}>{brand || "未设置"}</Text>
+        {/* Category (edit only) */}
+        {editing && <><Text style={S.label}>分类</Text><ChipGroup options={categories.map(c=>c.icon+c.name)} selected={cat?.icon+cat?.name||""} onToggle={()=>{}} /></>}
+        {editing && <View style={S.chips}>{categories.map((c)=>(
+          <Pressable key={c.id} style={[S.chip, catId===c.id&&S.chipActive]} onPress={()=>setCatId(c.id)}>
+            <Text style={[S.chipText, catId===c.id&&S.chipActiveText]}>{c.icon} {c.name}</Text>
+          </Pressable>
+        ))}</View>}
+
+        <Field label="品牌">{editing && <TextInput style={S.input} value={brand} onChangeText={setBrand} placeholder="Nike" placeholderTextColor={Colors.textTertiary} />}</Field>
+
+        <Field label="颜色">{editing && <ChipGroup options={COLORS} selected={color} onToggle={(c)=>setColor(color===c?"":c)} />}</Field>
+        {!editing && <Field label="颜色" value={color} />}
+
+        <Field label="季节">{editing && <ChipGroup options={SEASONS} selected={season} onToggle={seasonToggle} />}</Field>
+        {!editing && <Field label="季节" value={season} />}
+
+        <Field label="存放位置">{editing && <TextInput style={S.input} value={location} onChangeText={setLocation} placeholder="衣柜上层" placeholderTextColor={Colors.textTertiary} />}</Field>
+        {!editing && <Field label="存放位置" value={location} />}
+
+        <Field label="服装尺码">{editing && <ChipGroup options={SIZES} selected={clothingSize} onToggle={(s)=>setClothingSize(clothingSize===s?"":s)} />}</Field>
+        {!editing && <Field label="服装尺码" value={clothingSize} />}
+
+        <Field label="鞋码">{editing && <ChipGroup options={SHOE_SIZES} selected={shoeSize} onToggle={(s)=>setShoeSize(shoeSize===s?"":s)} />}</Field>
+        {!editing && <Field label="鞋码" value={shoeSize} />}
+
+        <Field label="价格 (¥)">{editing && <TextInput style={S.input} value={price} onChangeText={setPrice} placeholder="299" keyboardType="decimal-pad" placeholderTextColor={Colors.textTertiary} />}</Field>
+        {!editing && <Field label="价格" value={price ? `¥${price}` : "未设置"} />}
+
+        <Field label="购买链接">{editing && <TextInput style={S.input} value={purchaseLink} onChangeText={setPurchaseLink} placeholder="https://..." placeholderTextColor={Colors.textTertiary} />}</Field>
+
+        {/* Stats */}
+        {!editing && (
+          <>
+            <Field label="穿着次数" value={String(wearCount)} />
+            <Field label="单次穿着成本" value={`¥${costPerWear}`} />
+          </>
         )}
 
-        {/* Color */}
-        <Text style={S.label}>颜色</Text>
-        {editing ? (
-          <View style={S.chips}>
-            {COLORS.map((c) => (
-              <Pressable key={c} style={[S.chip, color===c&&S.chipActive]} onPress={()=>setColor(color===c?"":c)}>
-                <Text style={[S.chipText, color===c&&S.chipActiveText]}>{c}</Text>
-              </Pressable>
-            ))}
-          </View>
-        ) : (
-          <Text style={S.value}>{color || "未设置"}</Text>
-        )}
-
-        {/* Season */}
-        <Text style={S.label}>季节</Text>
-        {editing ? (
-          <View style={S.chips}>
-            {SEASONS.map((s) => (
-              <Pressable key={s} style={[S.chip, season.includes(s)&&S.chipActive]} onPress={()=>seasonToggle(s)}>
-                <Text style={[S.chipText, season.includes(s)&&S.chipActiveText]}>{s}</Text>
-              </Pressable>
-            ))}
-          </View>
-        ) : (
-          <Text style={S.value}>{season || "未设置"}</Text>
-        )}
-
-        {/* Notes */}
-        <Text style={S.label}>备注</Text>
-        {editing ? (
-          <TextInput style={[S.input, S.notesInput]} value={notes} onChangeText={setNotes} placeholder="备注信息" placeholderTextColor={Colors.textTertiary} multiline />
-        ) : (
-          <Text style={S.notesText}>{notes || "无"}</Text>
-        )}
+        <Field label="备注">{editing && <TextInput style={[S.input, S.notesInput]} value={notes} onChangeText={setNotes} placeholder="备注信息" placeholderTextColor={Colors.textTertiary} multiline />}</Field>
+        {!editing && <Field label="备注" value={notes} />}
 
         {/* Delete */}
         <Pressable style={({pressed})=>[S.deleteBtn, pressed&&S.pressed]} onPress={() => {
-          Alert.alert("删除", "确定删除？", [
-            { text: "取消", style: "cancel" },
-            { text: "删除", style: "destructive", onPress: async () => { await deleteItem(id!); router.back(); } },
-          ]);
+          Alert.alert("删除", "确定删除？", [{ text: "取消", style: "cancel" }, { text: "删除", style: "destructive", onPress: async () => { await deleteItem(id!); router.back(); } }]);
         }}>
           <Ionicons name="trash-outline" size={20} color={Colors.textTertiary} />
           <Text style={S.deleteText}>删除</Text>
         </Pressable>
-        <View style={{height:40}}/>
+        <View style={{height:60}}/>
       </View>
     </ScrollView>
   );
@@ -158,12 +163,12 @@ const S = StyleSheet.create({
   info: { padding: Spacing.xl, paddingTop: Spacing.lg },
   name: { fontSize: FontSize.xl, fontWeight: "700", color: Colors.textPrimary, marginBottom: 2 },
   cat: { fontSize: FontSize.sm, color: Colors.accent, marginBottom: Spacing.lg, fontWeight: "500" },
-  label: { fontSize: FontSize.sm, fontWeight: "600", color: Colors.textSecondary, marginTop: Spacing.lg, marginBottom: Spacing.sm },
+  fieldWrap: { marginTop: Spacing.lg },
+  label: { fontSize: FontSize.sm, fontWeight: "600", color: Colors.textSecondary, marginBottom: Spacing.sm },
   value: { fontSize: FontSize.base, color: Colors.textPrimary },
-  notesText: { fontSize: FontSize.base, color: Colors.textSecondary, lineHeight: 22 },
   input: { fontSize: FontSize.base, paddingVertical: 10, borderBottomWidth: 1, borderColor: Colors.divider, color: Colors.textPrimary, marginBottom: Spacing.sm },
-  notesInput: { height: 80, textAlignVertical: "top", marginTop: Spacing.sm },
-  chips: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.sm },
+  notesInput: { height: 80, textAlignVertical: "top" },
+  chips: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.sm, marginBottom: Spacing.sm },
   chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: Radius.full, backgroundColor: Colors.surface, minHeight: TouchMin, justifyContent: "center", borderWidth: 1, borderColor: Colors.divider },
   chipActive: { backgroundColor: Colors.accent, borderColor: Colors.accent },
   chipText: { fontSize: FontSize.sm, color: Colors.textSecondary },
