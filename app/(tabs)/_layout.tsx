@@ -6,7 +6,6 @@ import { Colors, FontSize, Shadows } from "../../src/design/tokens";
 export default function TabLayout() {
   return (
     <Tabs
-      sceneContainerStyle={{ flex: 1, backgroundColor: Colors.bg }}
       screenOptions={{
         tabBarActiveTintColor: Colors.accent,
         tabBarInactiveTintColor: Colors.textTertiary,

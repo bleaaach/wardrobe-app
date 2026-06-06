@@ -27,108 +27,128 @@ export default function SettingsScreen() {
 
   const Row = ({ icon, title, onPress, danger }: { icon: string; title: string; onPress?: () => void; danger?: boolean }) => (
     <Pressable style={({ pressed }) => [S.row, pressed && S.rowPressed]} onPress={onPress}>
-      <Ionicons name={icon as any} size={20} color={danger ? Colors.danger : Colors.accent} style={{ marginRight: Spacing.md }} />
+      <View style={[S.rowIcon, danger && { backgroundColor: "rgba(224,122,95,0.15)" }]}>
+        <Ionicons name={icon as any} size={18} color={danger ? Colors.danger : Colors.accent} />
+      </View>
       <Text style={[S.rowText, danger && { color: Colors.danger }]}>{title}</Text>
       <Ionicons name="chevron-forward" size={16} color={Colors.textTertiary} />
     </Pressable>
   );
 
   return (
-    <ScrollView style={S.container} contentContainerStyle={S.content}>
+    <ScrollView style={S.container} showsVerticalScrollIndicator={false}>
+      {/* Magazine Header */}
       <View style={S.header}>
-        <Text style={S.headerTitle}>设置</Text>
+        <Text style={S.headerTitle}>Settings</Text>
+        <Text style={S.headerSub}>管理你的衣橱数据</Text>
       </View>
 
-      <Text style={S.sectionTitle}>数据</Text>
-      <View style={S.card}>
-        <Row icon="share-outline" title="导出备份" onPress={async () => {
-          try {
-            const dbPath = (FileSystem as any).documentDirectory + "SQLite/wardrobe.db";
-            await Sharing.shareAsync(dbPath, { dialogTitle: "保存备份" });
-          } catch { Alert.alert("提示", "备份功能开发中"); }
-        }} />
-        <Row icon="cloud-download-outline" title="恢复备份" onPress={() => Alert.alert("提示", "开发中")} />
-      </View>
-
-      <Text style={S.sectionTitle}>同步设置</Text>
-      <View style={S.card}>
-        <View style={S.inputRow}>
-          <Text style={S.label}>服务器地址</Text>
-          <TextInput style={S.input} value={syncUrl} onChangeText={setSyncUrl} onBlur={() => setSetting("syncUrl", syncUrl)} placeholder="http://8.162.26.192/sync" placeholderTextColor={Colors.textTertiary} />
-        </View>
-        <View style={S.inputRow}>
-          <Text style={S.label}>Token</Text>
-          <TextInput style={S.input} value={token} onChangeText={setToken} onBlur={() => setSetting("token", token)} secureTextEntry placeholder="登录后获取" placeholderTextColor={Colors.textTertiary} />
+      {/* Data Section */}
+      <View style={S.section}>
+        <Text style={S.sectionLabel}>数据</Text>
+        <View style={S.card}>
+          <Row icon="share-outline" title="导出备份" onPress={async () => {
+            try {
+              const dbPath = (FileSystem as any).documentDirectory + "SQLite/wardrobe.db";
+              await Sharing.shareAsync(dbPath, { dialogTitle: "保存备份" });
+            } catch { Alert.alert("提示", "备份功能开发中"); }
+          }} />
+          <Row icon="cloud-download-outline" title="恢复备份" onPress={() => Alert.alert("提示", "开发中")} />
         </View>
       </View>
 
-      <Text style={S.sectionTitle}>数据管理</Text>
-      <View style={S.card}>
-        <Row icon="trash-outline" title="清空衣橱" danger onPress={() => {
-          if (typeof window !== "undefined" && window.confirm) {
-            if (window.confirm("确定要删除所有衣物数据吗？此操作不可恢复")) {
-              try {
-                localStorage.removeItem("@wardrobe/clothing");
-                localStorage.removeItem("@wardrobe/outfits");
-                localStorage.removeItem("@wardrobe/dailyLogs");
-                const store = useClothingStore.getState();
-                store.items = [];
-                store.loadClothing();
-                window.alert("已清空衣橱，请刷新页面");
-              } catch (e) {
-                window.alert("清空失败: " + (e as any).message);
-              }
-            }
-          }
-        }} />
-      </View>
-
-      <Text style={S.sectionTitle}>数据导入</Text>
-      <View style={S.card}>
-        <Pressable
-          style={({ pressed }) => [S.importBtn, pressed && S.importBtnPressed]}
-          onPress={() => {
-            if (Platform.OS === "web" && fileRef.current) {
-              fileRef.current.click();
-            } else {
-              Alert.alert("提示", "请在网页版使用此功能");
-            }
-          }}
-          disabled={importing}
-        >
-          <Ionicons name="cloud-download" size={20} color={importing ? Colors.textTertiary : Colors.accent} />
-          <Text style={[S.importText, importing && { color: Colors.textTertiary }]}>
-            {importing ? importMsg : "从备份文件导入 (.zip)"}
-          </Text>
-        </Pressable>
-        {Platform.OS === "web" && (
-          <input
-            ref={fileRef as any}
-            type="file"
-            accept=".zip"
-            style={{ display: "none" }}
-            onChange={async (e: any) => {
-              const file = e.target.files?.[0];
-              if (!file) return;
-              setImporting(true);
-              setImportMsg("正在读取文件...");
-              try {
-                const buffer = await file.arrayBuffer();
-                const result = await importClosetData(buffer, (p) => {
-                  setImportMsg(`导入衣物 ${p.current}/${p.total}`);
-                });
-                await loadClothing();
-                setImportMsg(`✅ 完成！导入 ${result.clothing} 件衣物`);
-                setImporting(false);
-                Alert.alert("导入完成", `成功导入 ${result.clothing} 件衣物`);
-              } catch (err: any) {
-                setImporting(false);
-                setImportMsg("");
-                Alert.alert("导入失败", err.message);
+      {/* Import Section */}
+      <View style={S.section}>
+        <Text style={S.sectionLabel}>导入</Text>
+        <View style={S.card}>
+          <Pressable
+            style={({ pressed }) => [S.importBtn, pressed && S.importBtnPressed]}
+            onPress={() => {
+              if (Platform.OS === "web" && fileRef.current) {
+                fileRef.current.click();
+              } else {
+                Alert.alert("提示", "请在网页版使用此功能");
               }
             }}
-          />
-        )}
+            disabled={importing}
+          >
+            <View style={S.importIcon}>
+              <Ionicons name="cloud-download" size={20} color={Colors.accent} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={S.importTitle}>从备份文件导入</Text>
+              <Text style={S.importDesc}>{importing ? importMsg : "支持 .zip 格式的衣橱备份"}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={Colors.textTertiary} />
+          </Pressable>
+          {Platform.OS === "web" && (
+            <input
+              ref={fileRef as any}
+              type="file"
+              accept=".zip"
+              style={{ display: "none" }}
+              onChange={async (e: any) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                setImporting(true);
+                setImportMsg("正在读取文件...");
+                try {
+                  const buffer = await file.arrayBuffer();
+                  const result = await importClosetData(buffer, (p) => {
+                    setImportMsg(`导入衣物 ${p.current}/${p.total}`);
+                  });
+                  await loadClothing();
+                  setImportMsg(`完成！导入 ${result.clothing} 件衣物`);
+                  setImporting(false);
+                  Alert.alert("导入完成", `成功导入 ${result.clothing} 件衣物`);
+                } catch (err: any) {
+                  setImporting(false);
+                  setImportMsg("");
+                  Alert.alert("导入失败", err.message);
+                }
+              }}
+            />
+          )}
+        </View>
+      </View>
+
+      {/* Sync Section */}
+      <View style={S.section}>
+        <Text style={S.sectionLabel}>同步设置</Text>
+        <View style={S.card}>
+          <View style={S.inputRow}>
+            <Text style={S.inputLabel}>服务器地址</Text>
+            <TextInput style={S.input} value={syncUrl} onChangeText={setSyncUrl} onBlur={() => setSetting("syncUrl", syncUrl)} placeholder="http://8.162.26.192/sync" placeholderTextColor={Colors.textTertiary} />
+          </View>
+          <View style={S.inputRow}>
+            <Text style={S.inputLabel}>Token</Text>
+            <TextInput style={S.input} value={token} onChangeText={setToken} onBlur={() => setSetting("token", token)} secureTextEntry placeholder="登录后获取" placeholderTextColor={Colors.textTertiary} />
+          </View>
+        </View>
+      </View>
+
+      {/* Danger Section */}
+      <View style={S.section}>
+        <Text style={S.sectionLabel}>危险操作</Text>
+        <View style={S.card}>
+          <Row icon="trash-outline" title="清空衣橱" danger onPress={() => {
+            if (typeof window !== "undefined" && window.confirm) {
+              if (window.confirm("确定要删除所有衣物数据吗？此操作不可恢复")) {
+                try {
+                  localStorage.removeItem("@wardrobe/clothing");
+                  localStorage.removeItem("@wardrobe/outfits");
+                  localStorage.removeItem("@wardrobe/dailyLogs");
+                  const store = useClothingStore.getState();
+                  store.items = [];
+                  store.loadClothing();
+                  window.alert("已清空衣橱，请刷新页面");
+                } catch (e) {
+                  window.alert("清空失败: " + (e as any).message);
+                }
+              }
+            }
+          }} />
+        </View>
       </View>
 
       <Text style={S.footer}>智能衣橱 v1.0</Text>
@@ -139,15 +159,17 @@ export default function SettingsScreen() {
 
 const S = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bg },
-  content: { paddingHorizontal: Spacing.xl },
 
-  header: { paddingTop: 60, paddingBottom: Spacing.lg },
-  headerTitle: { fontSize: FontSize.xxl, fontWeight: "700", color: Colors.textPrimary, letterSpacing: -0.5 },
+  header: { paddingTop: 60, paddingHorizontal: Spacing.xl, paddingBottom: Spacing.lg },
+  headerTitle: { fontSize: 42, fontWeight: "800", color: Colors.textPrimary, letterSpacing: -1.5, lineHeight: 48 },
+  headerSub: { fontSize: FontSize.base, color: Colors.textTertiary, marginTop: Spacing.xs },
+
+  section: { marginBottom: Spacing.xxl, paddingHorizontal: Spacing.xl },
+  sectionLabel: { fontSize: FontSize.sm, fontWeight: "600", color: Colors.textSecondary, marginBottom: Spacing.sm, paddingLeft: 4 },
 
   card: {
     backgroundColor: Colors.surfaceElevated,
-    borderRadius: Radius.lg,
-    marginBottom: Spacing.xl,
+    borderRadius: Radius.xl,
     overflow: "hidden",
     borderWidth: 1,
     borderColor: Colors.border,
@@ -161,31 +183,47 @@ const S = StyleSheet.create({
     minHeight: TouchMin,
   },
   rowPressed: { backgroundColor: Colors.surfaceHighlight },
-  rowText: { flex: 1, fontSize: FontSize.base, color: Colors.textPrimary },
+  rowIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: Colors.accentLight,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: Spacing.md,
+  },
+  rowText: { flex: 1, fontSize: FontSize.base, color: Colors.textPrimary, fontWeight: "500" },
 
-  sectionTitle: { fontSize: FontSize.sm, fontWeight: "600", color: Colors.textSecondary, marginBottom: Spacing.sm, paddingLeft: 4 },
+  importBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: Spacing.lg,
+    minHeight: TouchMin,
+  },
+  importBtnPressed: { backgroundColor: Colors.surfaceHighlight },
+  importIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: Colors.accentLight,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: Spacing.md,
+  },
+  importTitle: { fontSize: FontSize.base, color: Colors.textPrimary, fontWeight: "500" },
+  importDesc: { fontSize: FontSize.sm, color: Colors.textTertiary, marginTop: 2 },
 
   inputRow: { padding: Spacing.lg, borderBottomWidth: 1, borderColor: Colors.divider },
-  label: { fontSize: FontSize.sm, color: Colors.textSecondary, marginBottom: 6 },
+  inputLabel: { fontSize: FontSize.sm, color: Colors.textSecondary, marginBottom: 6, fontWeight: "500" },
   input: {
     backgroundColor: Colors.surface,
-    borderRadius: Radius.sm,
+    borderRadius: Radius.md,
     padding: 12,
     fontSize: FontSize.base,
     color: Colors.textPrimary,
     borderWidth: 1,
     borderColor: Colors.border,
   },
-
-  importBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    padding: Spacing.lg,
-    minHeight: TouchMin,
-  },
-  importBtnPressed: { backgroundColor: Colors.surfaceHighlight },
-  importText: { fontSize: FontSize.base, color: Colors.accent },
 
   footer: { textAlign: "center", color: Colors.textTertiary, fontSize: FontSize.xs, marginTop: Spacing.xxxl },
 });

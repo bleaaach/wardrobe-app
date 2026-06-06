@@ -22,13 +22,19 @@ export default function ClosetScreen() {
 
   return (
     <View style={S.container}>
-      {/* Category Stories - Large Horizontal Scroll */}
+      {/* Magazine Header */}
+      <View style={S.header}>
+        <Text style={S.headerTitle}>Closet</Text>
+        <Text style={S.headerSub}>{items.length} 件衣物 · {categories.length} 个分类</Text>
+      </View>
+
+      {/* Category Stories */}
       <FlatList
         horizontal
         data={[{ id: null as any, name: "全部", icon: "✦" }, ...categories]}
         showsHorizontalScrollIndicator={false}
         style={S.catList}
-        contentContainerStyle={{ paddingHorizontal: Spacing.lg, gap: Spacing.md }}
+        contentContainerStyle={{ paddingHorizontal: Spacing.xl, gap: Spacing.md }}
         renderItem={({ item }) => {
           const active = selectedCat === item.id;
           return (
@@ -36,7 +42,9 @@ export default function ClosetScreen() {
               style={[S.catCard, active && S.catCardActive]}
               onPress={() => setSelectedCat(active ? null : item.id)}
             >
-              <Text style={[S.catIcon, active && S.catIconActive]}>{item.icon}</Text>
+              <View style={[S.catRing, active && S.catRingActive]}>
+                <Text style={S.catIcon}>{item.icon}</Text>
+              </View>
               <Text style={[S.catName, active && S.catNameActive]}>{item.name}</Text>
             </Pressable>
           );
@@ -56,6 +64,11 @@ export default function ClosetScreen() {
             <View style={S.itemOverlay}>
               <Text style={S.itemName} numberOfLines={1}>{item.name || catName(item.categoryId)}</Text>
             </View>
+            {item.favorite === 1 && (
+              <View style={S.favBadge}>
+                <Ionicons name="heart" size={12} color={Colors.danger} />
+              </View>
+            )}
           </Pressable>
         )}
         keyExtractor={(item) => item.id}
@@ -68,7 +81,6 @@ export default function ClosetScreen() {
         }
       />
 
-      {/* FAB */}
       <Pressable style={S.fab} onPress={() => router.push("/closet/add")}>
         <Ionicons name="add" size={26} color={Colors.textInverse} />
       </Pressable>
@@ -79,25 +91,30 @@ export default function ClosetScreen() {
 const S = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bg },
 
-  // Category Cards (Instagram Stories style)
-  catList: { maxHeight: 100, marginVertical: Spacing.md },
-  catCard: {
+  header: { paddingTop: 60, paddingHorizontal: Spacing.xl, paddingBottom: Spacing.lg },
+  headerTitle: { fontSize: 42, fontWeight: "800", color: Colors.textPrimary, letterSpacing: -1.5, lineHeight: 48 },
+  headerSub: { fontSize: FontSize.base, color: Colors.textTertiary, marginTop: Spacing.xs },
+
+  // Category Stories (Instagram style with ring)
+  catList: { maxHeight: 110, marginBottom: Spacing.md },
+  catCard: { alignItems: "center", gap: 6 },
+  catCardActive: {},
+  catRing: {
     width: 72,
-    height: 88,
-    borderRadius: Radius.lg,
+    height: 72,
+    borderRadius: 36,
     backgroundColor: Colors.surface,
     borderWidth: 1,
     borderColor: Colors.border,
     justifyContent: "center",
     alignItems: "center",
-    gap: 4,
   },
-  catCardActive: {
-    backgroundColor: Colors.accentLight,
+  catRingActive: {
+    borderWidth: 2,
     borderColor: Colors.accent,
+    backgroundColor: Colors.accentLight,
   },
-  catIcon: { fontSize: 24, color: Colors.textSecondary },
-  catIconActive: { color: Colors.accent },
+  catIcon: { fontSize: 28 },
   catName: { fontSize: FontSize.xs, color: Colors.textSecondary, fontWeight: "500" },
   catNameActive: { color: Colors.accent, fontWeight: "600" },
 
@@ -106,7 +123,7 @@ const S = StyleSheet.create({
   item: {
     flex: 1,
     margin: 6,
-    borderRadius: Radius.lg,
+    borderRadius: Radius.xl,
     overflow: "hidden",
     backgroundColor: Colors.surface,
     position: "relative",
@@ -119,16 +136,26 @@ const S = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
     backgroundColor: "rgba(0,0,0,0.5)",
   },
-  itemName: { fontSize: FontSize.xs, color: Colors.textPrimary, fontWeight: "500" },
+  itemName: { fontSize: FontSize.sm, color: Colors.textPrimary, fontWeight: "500" },
+  favBadge: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
 
-  // FAB
   fab: {
     position: "absolute",
-    bottom: 24,
+    bottom: 28,
     right: 24,
     width: 56,
     height: 56,

@@ -24,24 +24,56 @@ export default function CreateOutfitScreen() {
     <View style={S.container}>
       <ModalHandle />
 
-      <View style={S.form}>
-        <Text style={S.label}>搭配名称</Text>
+      {/* Header */}
+      <View style={S.header}>
+        <Text style={S.headerTitle}>新建搭配</Text>
+        <Text style={S.headerSub}>已选 {selected.size} 件</Text>
+      </View>
+
+      {/* Name Input */}
+      <View style={S.inputWrap}>
         <TextInput
           style={S.input}
           value={name}
           onChangeText={setName}
-          placeholder="如：约会装、通勤装"
+          placeholder="给这套搭配起个名字"
           placeholderTextColor={Colors.textTertiary}
         />
       </View>
 
-      <Text style={S.sectionTitle}>选择衣物 ({selected.size}件)</Text>
+      {/* Selected Preview */}
+      {selected.size > 0 && (
+        <View style={S.previewRow}>
+          {Array.from(selected).slice(0, 5).map((id) => {
+            const item = items.find((i) => i.id === id);
+            if (!item) return null;
+            return (
+              <Pressable key={id} style={S.previewThumb} onPress={() => toggleItem(id)}>
+                <AsyncImage uri={item.imageUri} style={S.previewImage} />
+                <View style={S.removeBadge}>
+                  <Ionicons name="close" size={12} color={Colors.textPrimary} />
+                </View>
+              </Pressable>
+            );
+          })}
+        </View>
+      )}
+
+      {/* Grid */}
       <FlatList
         data={items}
         numColumns={3}
+        style={{ flex: 1 }}
         contentContainerStyle={S.grid}
         renderItem={({ item }) => (
-          <Pressable style={({ pressed }) => [S.item, selected.has(item.id) && S.itemSelected, pressed && S.pressed]} onPress={() => toggleItem(item.id)}>
+          <Pressable
+            style={({ pressed }) => [
+              S.item,
+              selected.has(item.id) && S.itemSelected,
+              pressed && S.pressed,
+            ]}
+            onPress={() => toggleItem(item.id)}
+          >
             <AsyncImage uri={item.imageUri} style={S.itemImage} />
             {selected.has(item.id) && (
               <View style={S.check}>
@@ -70,26 +102,44 @@ export default function CreateOutfitScreen() {
 const S = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bg },
 
-  form: { padding: Spacing.xl, backgroundColor: Colors.surfaceElevated, marginBottom: Spacing.md, borderBottomWidth: 1, borderColor: Colors.border },
-  label: { fontSize: FontSize.sm, fontWeight: "600", color: Colors.textSecondary, marginBottom: Spacing.sm },
+  header: { paddingTop: 24, paddingHorizontal: Spacing.xl, paddingBottom: Spacing.md },
+  headerTitle: { fontSize: FontSize.xxl, fontWeight: "800", color: Colors.textPrimary, letterSpacing: -0.5 },
+  headerSub: { fontSize: FontSize.sm, color: Colors.textTertiary, marginTop: 4 },
+
+  inputWrap: { paddingHorizontal: Spacing.xl, marginBottom: Spacing.md },
   input: {
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.md,
-    padding: Spacing.md,
+    backgroundColor: Colors.surfaceElevated,
+    borderRadius: Radius.xl,
+    padding: Spacing.lg,
     fontSize: FontSize.base,
     color: Colors.textPrimary,
     borderWidth: 1,
     borderColor: Colors.border,
   },
 
-  sectionTitle: { fontSize: FontSize.base, fontWeight: "600", color: Colors.textPrimary, paddingHorizontal: Spacing.xl, paddingBottom: Spacing.sm },
+  previewRow: { flexDirection: "row", gap: 8, paddingHorizontal: Spacing.xl, marginBottom: Spacing.md },
+  previewThumb: { width: 56, height: 56, borderRadius: Radius.md, overflow: "hidden", position: "relative" },
+  previewImage: { width: "100%", height: "100%" },
+  removeBadge: {
+    position: "absolute",
+    top: -4,
+    right: -4,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: Colors.surfaceHighlight,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
 
   grid: { paddingHorizontal: Spacing.md, paddingBottom: 120 },
   item: {
     flex: 1,
     margin: 4,
     backgroundColor: Colors.surface,
-    borderRadius: Radius.md,
+    borderRadius: Radius.lg,
     overflow: "hidden",
     borderWidth: 2,
     borderColor: "transparent",

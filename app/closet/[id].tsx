@@ -60,7 +60,7 @@ export default function ClothingDetail() {
 
   const Field = ({ label, value, children }: {label:string, value?:string, children?:any}) => (
     <View style={S.fieldWrap}>
-      <Text style={S.label}>{label}</Text>
+      <Text style={S.fieldLabel}>{label}</Text>
       {editing && children ? children : <Text style={S.value}>{value || "未设置"}</Text>}
     </View>
   );
@@ -76,10 +76,11 @@ export default function ClothingDetail() {
   );
 
   return (
-    <ScrollView style={S.container} contentContainerStyle={S.content} showsVerticalScrollIndicator={false}>
-      {/* Hero Image - Full Width Dark Immersive */}
+    <ScrollView style={S.container} showsVerticalScrollIndicator={false}>
+      {/* Hero Image */}
       <View style={S.imageWrap}>
         <AsyncImage uri={item.imageUri} style={S.image} />
+        <View style={S.imageGradient} />
         <View style={S.overlayActions}>
           <IconButton name="close" color={Colors.textPrimary} onPress={() => router.back()} />
           <View style={{ flexDirection: "row", gap: 8 }}>
@@ -87,22 +88,46 @@ export default function ClothingDetail() {
             <IconButton name={editing ? "checkmark" : "create-outline"} color={editing ? Colors.accent : Colors.textPrimary} onPress={() => editing ? save() : setEditing(true)} />
           </View>
         </View>
-        <View style={S.imageGradient} />
       </View>
 
       <View style={S.info}>
-        {/* Name */}
+        {/* Name & Category */}
         {editing ? (
-          <TextInput style={S.input} value={name} onChangeText={setName} placeholder="名称" placeholderTextColor={Colors.textTertiary} />
+          <TextInput style={S.nameInput} value={name} onChangeText={setName} placeholder="名称" placeholderTextColor={Colors.textTertiary} />
         ) : (
           <>
             <Text style={S.name}>{name || "未命名"}</Text>
-            <Text style={S.cat}>{cat?.icon} {cat?.name}</Text>
+            <View style={S.catBadge}>
+              <Text style={S.catText}>{cat?.icon} {cat?.name}</Text>
+            </View>
           </>
         )}
 
-        {/* Category (edit only) */}
-        {editing && <><Text style={S.label}>分类</Text><View style={S.chips}>{categories.map((c)=>{
+        {/* Stats Cards */}
+        {!editing && (
+          <View style={S.statsRow}>
+            <View style={S.statBox}>
+              <Ionicons name="sync-outline" size={18} color={Colors.accent} />
+              <Text style={S.statNum}>{wearCount}</Text>
+              <Text style={S.statLabel}>穿着次数</Text>
+            </View>
+            <View style={S.statBox}>
+              <Ionicons name="cash-outline" size={18} color={Colors.accent} />
+              <Text style={S.statNum}>¥{costPerWear}</Text>
+              <Text style={S.statLabel}>单次成本</Text>
+            </View>
+            {item.price ? (
+              <View style={S.statBox}>
+                <Ionicons name="pricetag-outline" size={18} color={Colors.accent} />
+                <Text style={S.statNum}>¥{item.price}</Text>
+                <Text style={S.statLabel}>购入价格</Text>
+              </View>
+            ) : null}
+          </View>
+        )}
+
+        {/* Category (edit) */}
+        {editing && <><Text style={S.fieldLabel}>分类</Text><View style={S.chips}>{categories.map((c)=>{
           const isActive = catId === c.id;
           return (
             <Pressable key={c.id} style={[S.chip, isActive&&S.chipActive]} onPress={()=>setCatId(c.id)}>
@@ -111,53 +136,42 @@ export default function ClothingDetail() {
           );
         })}</View></>}
 
-        <Field label="品牌">{editing && <TextInput style={S.input} value={brand} onChangeText={setBrand} placeholder="Nike" placeholderTextColor={Colors.textTertiary} />}</Field>
+        {/* Info Card */}
+        <View style={S.infoCard}>
+          <Field label="品牌">{editing && <TextInput style={S.input} value={brand} onChangeText={setBrand} placeholder="Nike" placeholderTextColor={Colors.textTertiary} />}</Field>
 
-        <Field label="颜色">{editing && <ChipGroup options={COLORS} selected={color} onToggle={(c)=>setColor(color===c?"":c)} />}</Field>
-        {!editing && <Field label="颜色" value={color} />}
+          <Field label="颜色">{editing && <ChipGroup options={COLORS} selected={color} onToggle={(c)=>setColor(color===c?"":c)} />}</Field>
+          {!editing && <Field label="颜色" value={color} />}
 
-        <Field label="季节">{editing && <ChipGroup options={SEASONS} selected={season} onToggle={seasonToggle} />}</Field>
-        {!editing && <Field label="季节" value={season} />}
+          <Field label="季节">{editing && <ChipGroup options={SEASONS} selected={season} onToggle={seasonToggle} />}</Field>
+          {!editing && <Field label="季节" value={season} />}
 
-        <Field label="存放位置">{editing && <TextInput style={S.input} value={location} onChangeText={setLocation} placeholder="衣柜上层" placeholderTextColor={Colors.textTertiary} />}</Field>
-        {!editing && <Field label="存放位置" value={location} />}
+          <Field label="存放位置">{editing && <TextInput style={S.input} value={location} onChangeText={setLocation} placeholder="衣柜上层" placeholderTextColor={Colors.textTertiary} />}</Field>
+          {!editing && <Field label="存放位置" value={location} />}
 
-        <Field label="服装尺码">{editing && <ChipGroup options={SIZES} selected={clothingSize} onToggle={(s)=>setClothingSize(clothingSize===s?"":s)} />}</Field>
-        {!editing && <Field label="服装尺码" value={clothingSize} />}
+          <Field label="服装尺码">{editing && <ChipGroup options={SIZES} selected={clothingSize} onToggle={(s)=>setClothingSize(clothingSize===s?"":s)} />}</Field>
+          {!editing && <Field label="服装尺码" value={clothingSize} />}
 
-        <Field label="鞋码">{editing && <ChipGroup options={SHOE_SIZES} selected={shoeSize} onToggle={(s)=>setShoeSize(shoeSize===s?"":s)} />}</Field>
-        {!editing && <Field label="鞋码" value={shoeSize} />}
+          <Field label="鞋码">{editing && <ChipGroup options={SHOE_SIZES} selected={shoeSize} onToggle={(s)=>setShoeSize(shoeSize===s?"":s)} />}</Field>
+          {!editing && <Field label="鞋码" value={shoeSize} />}
 
-        <Field label="价格 (¥)">{editing && <TextInput style={S.input} value={price} onChangeText={setPrice} placeholder="299" keyboardType="decimal-pad" placeholderTextColor={Colors.textTertiary} />}</Field>
-        {!editing && <Field label="价格" value={price ? `¥${price}` : "未设置"} />}
+          <Field label="价格 (¥)">{editing && <TextInput style={S.input} value={price} onChangeText={setPrice} placeholder="299" keyboardType="decimal-pad" placeholderTextColor={Colors.textTertiary} />}</Field>
+          {!editing && <Field label="价格" value={price ? `¥${price}` : "未设置"} />}
 
-        <Field label="购买链接">{editing && <TextInput style={S.input} value={purchaseLink} onChangeText={setPurchaseLink} placeholder="https://..." placeholderTextColor={Colors.textTertiary} />}</Field>
+          <Field label="购买链接">{editing && <TextInput style={S.input} value={purchaseLink} onChangeText={setPurchaseLink} placeholder="https://..." placeholderTextColor={Colors.textTertiary} />}</Field>
 
-        {/* Stats */}
-        {!editing && (
-          <View style={S.statsRow}>
-            <View style={S.statBox}>
-              <Text style={S.statNum}>{wearCount}</Text>
-              <Text style={S.statLabel}>穿着次数</Text>
-            </View>
-            <View style={S.statBox}>
-              <Text style={S.statNum}>¥{costPerWear}</Text>
-              <Text style={S.statLabel}>单次成本</Text>
-            </View>
-          </View>
-        )}
-
-        <Field label="备注">{editing && <TextInput style={[S.input, S.notesInput]} value={notes} onChangeText={setNotes} placeholder="备注信息" placeholderTextColor={Colors.textTertiary} multiline />}</Field>
-        {!editing && <Field label="备注" value={notes} />}
+          <Field label="备注">{editing && <TextInput style={[S.input, S.notesInput]} value={notes} onChangeText={setNotes} placeholder="备注信息" placeholderTextColor={Colors.textTertiary} multiline />}</Field>
+          {!editing && <Field label="备注" value={notes} />}
+        </View>
 
         {/* Delete */}
         <Pressable style={({pressed})=>[S.deleteBtn, pressed&&S.pressed]} onPress={() => {
           Alert.alert("删除", "确定删除？", [{ text: "取消", style: "cancel" }, { text: "删除", style: "destructive", onPress: async () => { await deleteItem(id!); router.back(); } }]);
         }}>
-          <Ionicons name="trash-outline" size={20} color={Colors.textTertiary} />
-          <Text style={S.deleteText}>删除</Text>
+          <Ionicons name="trash-outline" size={20} color={Colors.danger} />
+          <Text style={S.deleteText}>删除衣物</Text>
         </Pressable>
-        <View style={{height:60}}/>
+        <View style={{height:60}} />
       </View>
     </ScrollView>
   );
@@ -175,17 +189,56 @@ const S = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: 100,
-    backgroundColor: "rgba(10,10,10,0.6)",
+    height: 160,
+    backgroundColor: "rgba(10,10,10,0.7)",
   },
   overlayActions: { position: "absolute", top: 48, left: 16, right: 16, flexDirection: "row", justifyContent: "space-between", zIndex: 10 },
 
-  info: { padding: Spacing.xl, paddingTop: Spacing.lg },
-  name: { fontSize: FontSize.xl, fontWeight: "700", color: Colors.textPrimary, marginBottom: 2 },
-  cat: { fontSize: FontSize.sm, color: Colors.accent, marginBottom: Spacing.lg, fontWeight: "500" },
+  info: { padding: Spacing.xl, paddingTop: 0, marginTop: -50 },
+  name: { fontSize: FontSize.xxl, fontWeight: "800", color: Colors.textPrimary, letterSpacing: -0.5 },
+  nameInput: {
+    fontSize: FontSize.xxl,
+    fontWeight: "800",
+    color: Colors.textPrimary,
+    borderBottomWidth: 1,
+    borderColor: Colors.border,
+    paddingVertical: 8,
+    marginBottom: Spacing.md,
+  },
+  catBadge: {
+    alignSelf: "flex-start",
+    backgroundColor: Colors.accentLight,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: Radius.full,
+    marginTop: Spacing.sm,
+    marginBottom: Spacing.xl,
+  },
+  catText: { fontSize: FontSize.sm, color: Colors.accent, fontWeight: "600" },
 
+  statsRow: { flexDirection: "row", gap: Spacing.md, marginBottom: Spacing.xl },
+  statBox: {
+    flex: 1,
+    backgroundColor: Colors.surfaceElevated,
+    borderRadius: Radius.lg,
+    padding: Spacing.lg,
+    alignItems: "center",
+    gap: 6,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  statNum: { fontSize: FontSize.lg, fontWeight: "800", color: Colors.textPrimary },
+  statLabel: { fontSize: FontSize.xs, color: Colors.textSecondary },
+
+  infoCard: {
+    backgroundColor: Colors.surfaceElevated,
+    borderRadius: Radius.xl,
+    padding: Spacing.xl,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
   fieldWrap: { marginTop: Spacing.lg },
-  label: { fontSize: FontSize.sm, fontWeight: "600", color: Colors.textSecondary, marginBottom: Spacing.sm },
+  fieldLabel: { fontSize: FontSize.sm, fontWeight: "600", color: Colors.textSecondary, marginBottom: Spacing.sm },
   value: { fontSize: FontSize.base, color: Colors.textPrimary },
 
   input: {
@@ -213,19 +266,6 @@ const S = StyleSheet.create({
   chipText: { fontSize: FontSize.sm, color: Colors.textSecondary },
   chipActiveText: { color: Colors.textInverse, fontWeight: "600" },
 
-  statsRow: { flexDirection: "row", gap: Spacing.md, marginTop: Spacing.xl },
-  statBox: {
-    flex: 1,
-    backgroundColor: Colors.surfaceElevated,
-    borderRadius: Radius.lg,
-    padding: Spacing.lg,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  statNum: { fontSize: FontSize.lg, fontWeight: "700", color: Colors.accent },
-  statLabel: { fontSize: FontSize.xs, color: Colors.textSecondary, marginTop: 4 },
-
   deleteBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -240,5 +280,5 @@ const S = StyleSheet.create({
     borderColor: Colors.border,
   },
   pressed: { opacity: PressedOpacity },
-  deleteText: { color: Colors.textTertiary, fontSize: FontSize.base, fontWeight: "500" },
+  deleteText: { color: Colors.danger, fontSize: FontSize.base, fontWeight: "500" },
 });
