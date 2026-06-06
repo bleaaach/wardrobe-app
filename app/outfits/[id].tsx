@@ -1,7 +1,7 @@
 import { View, Text, Image, ScrollView, Pressable, StyleSheet, Alert } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { getDatabase } from "../../src/db/database";
+import { getOutfits, deleteOutfit, getAllClothing } from "../../src/db/database";
 import { Outfit, Clothing } from "../../src/types";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -11,41 +11,24 @@ export default function OutfitDetailScreen() {
   const [outfit, setOutfit] = useState<Outfit | null>(null);
   const [items, setItems] = useState<Clothing[]>([]);
 
-  useEffect(() => { loadOutfit(); }, [id]);
+  useEffect(() => { load(); }, [id]);
 
-  const loadOutfit = async () => {
-    const db = await getDatabase();
-    const o = await db.getFirstAsync<Outfit>("SELECT * FROM outfits WHERE id = ?", [id]);
+  const load = async () => {
+    const all = await getOutfits();
+    const o = all.find((x) => x.id === id);
     if (!o) return;
     setOutfit(o);
     const ids: string[] = JSON.parse(o.clothingIds || "[]");
-    if (ids.length > 0) {
-      const placeholders = ids.map(() => "?").join(",");
-      const clothing = await db.getAllAsync<Clothing>(`SELECT * FROM clothing WHERE id IN (${placeholders})`, ids);
-      setItems(clothing);
-    }
+    const allClothing = await getAllClothing();
+    setItems(allClothing.filter((c) => ids.includes(c.id)));
   };
 
-  const handleDelete = () => {
-    Alert.alert("删除搭配", "确定要删除吗？", [
-      { text: "取消", style: "cancel" },
-      { text: "删除", style: "destructive", onPress: async () => {
-        const db = await getDatabase();
-        await db.runAsync("UPDATE outfits SET deleted = 1 WHERE id = ?", [id]);
-        router.back();
-      }},
-    ]);
-  };
-
-  if (!outfit) {
-    return <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}><Text style={{ color: "#9ca3af" }}>搭配不存在</Text></View>;
-  }
+  if (!outfit) return <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}><Text style={{ color: "#9ca3af" }}>搭配不存在</Text></View>;
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.name}>{outfit.name || "未命名搭配"}</Text>
       <Text style={styles.date}>{new Date(outfit.createdAt).toLocaleDateString("zh-CN")}</Text>
-
       <Text style={styles.section}>包含衣物 ({items.length}件)</Text>
       <View style={styles.grid}>
         {items.map((item) => (
@@ -55,10 +38,12 @@ export default function OutfitDetailScreen() {
           </Pressable>
         ))}
       </View>
-
-      {outfit.notes ? <Text style={styles.notes}>{outfit.notes}</Text> : null}
-
-      <Pressable style={styles.deleteBtn} onPress={handleDelete}>
+      <Pressable style={styles.deleteBtn} onPress={() => {
+        Alert.alert("删除搭配", "确定要删除吗？", [
+          { text: "取消", style: "cancel" },
+          { text: "删除", style: "destructive", onPress: async () => { await deleteOutfit(id!); router.back(); } },
+        ]);
+      }}>
         <Ionicons name="trash-outline" size={20} color="#ef4444" />
         <Text style={styles.deleteText}>删除搭配</Text>
       </Pressable>
@@ -76,7 +61,6 @@ const styles = StyleSheet.create({
   item: { width: "31%", backgroundColor: "#fff", borderRadius: 12, overflow: "hidden" },
   itemImage: { width: "100%", aspectRatio: 0.8, backgroundColor: "#f3f4f6" },
   itemName: { fontSize: 11, color: "#6b7280", padding: 6, textAlign: "center" },
-  notes: { marginTop: 16, color: "#6b7280", fontSize: 14, lineHeight: 20 },
   deleteBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 24, padding: 14, borderRadius: 12, backgroundColor: "#fff" },
   deleteText: { color: "#ef4444", fontSize: 15 },
 });

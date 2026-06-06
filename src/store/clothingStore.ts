@@ -1,7 +1,6 @@
 import { create } from "zustand";
 import { Clothing, Category } from "../types";
-import { getAllClothing, getClothingByCategory, addClothing, updateClothing, deleteClothing } from "../db/clothing";
-import { getDatabase } from "../db/database";
+import { getAllClothing, addClothing, updateClothing, deleteClothing, getCategories } from "../db/database";
 
 interface ClothingState {
   items: Clothing[];
@@ -27,8 +26,7 @@ export const useClothingStore = create<ClothingState>((set, get) => ({
   },
 
   loadCategories: async () => {
-    const db = await getDatabase();
-    const categories = await db.getAllAsync<Category>("SELECT * FROM categories ORDER BY sort_order");
+    const categories = await getCategories();
     set({ categories });
   },
 

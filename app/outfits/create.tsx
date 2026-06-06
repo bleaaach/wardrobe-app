@@ -2,33 +2,19 @@ import { View, Text, FlatList, Pressable, Image, TextInput, StyleSheet, Alert } 
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { useClothingStore } from "../../src/store/clothingStore";
-import { getDatabase } from "../../src/db/database";
+import { addOutfit } from "../../src/db/database";
 import { Ionicons } from "@expo/vector-icons";
-import { v4 as uuid } from "uuid";
 
 export default function CreateOutfitScreen() {
   const router = useRouter();
   const items = useClothingStore((s) => s.items);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [name, setName] = useState("");
-  const [notes, setNotes] = useState("");
 
   const toggleItem = (id: string) => {
     const next = new Set(selected);
     next.has(id) ? next.delete(id) : next.add(id);
     setSelected(next);
-  };
-
-  const handleSave = async () => {
-    if (selected.size === 0) { Alert.alert("请至少选择一件衣物"); return; }
-    const db = await getDatabase();
-    const id = uuid();
-    const now = new Date().toISOString();
-    await db.runAsync(
-      "INSERT INTO outfits (id, name, clothing_ids, notes, created_at, updated_at, deleted) VALUES (?, ?, ?, ?, ?, ?, 0)",
-      [id, name, JSON.stringify([...selected]), notes, now, now]
-    );
-    router.back();
   };
 
   return (
@@ -37,7 +23,6 @@ export default function CreateOutfitScreen() {
         <Text style={styles.label}>搭配名称</Text>
         <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="如：约会装、通勤装" />
       </View>
-
       <Text style={styles.sectionTitle}>选择衣物 ({selected.size}件)</Text>
       <FlatList
         data={items}
@@ -51,8 +36,14 @@ export default function CreateOutfitScreen() {
         )}
         keyExtractor={(item) => item.id}
       />
-
-      <Pressable style={[styles.saveBtn, selected.size === 0 && styles.saveBtnDisabled]} onPress={handleSave}>
+      <Pressable
+        style={[styles.saveBtn, selected.size === 0 && styles.saveBtnDisabled]}
+        onPress={async () => {
+          if (selected.size === 0) { Alert.alert("请至少选择一件衣物"); return; }
+          await addOutfit({ name, clothingIds: JSON.stringify([...selected]), notes: "" });
+          router.back();
+        }}
+      >
         <Text style={styles.saveBtnText}>保存搭配</Text>
       </Pressable>
     </View>

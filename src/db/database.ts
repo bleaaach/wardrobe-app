@@ -1,85 +1,130 @@
-import * as SQLite from "expo-sqlite";
-import { DEFAULT_CATEGORIES } from "../types";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Clothing, Category, Outfit, DailyLog, DEFAULT_CATEGORIES } from "../types";
 
-let db: SQLite.SQLiteDatabase | null = null;
+// ====== 通用 JSON 存储 ======
+const STORAGE_KEYS = {
+  clothing: "@wardrobe/clothing",
+  outfits: "@wardrobe/outfits",
+  dailyLogs: "@wardrobe/dailyLogs",
+  categories: "@wardrobe/categories",
+  settings: "@wardrobe/settings",
+};
 
-export async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
-  if (db) return db;
-  db = await SQLite.openDatabaseAsync("wardrobe.db");
-  await initDatabase(db);
-  return db;
+async function getJson<T>(key: string, fallback: T): Promise<T> {
+  const raw = await AsyncStorage.getItem(key);
+  if (!raw) return fallback;
+  try { return JSON.parse(raw); } catch { return fallback; }
 }
 
-async function initDatabase(database: SQLite.SQLiteDatabase) {
-  await database.execAsync(`
-    CREATE TABLE IF NOT EXISTS categories (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      icon TEXT,
-      sort_order INTEGER DEFAULT 0
-    );
+async function setJson<T>(key: string, value: T): Promise<void> {
+  await AsyncStorage.setItem(key, JSON.stringify(value));
+}
 
-    CREATE TABLE IF NOT EXISTS clothing (
-      id TEXT PRIMARY KEY,
-      category_id TEXT NOT NULL,
-      name TEXT DEFAULT '',
-      image_uri TEXT NOT NULL,
-      image_nobg_uri TEXT,
-      brand TEXT DEFAULT '',
-      color TEXT DEFAULT '',
-      season TEXT DEFAULT '',
-      notes TEXT DEFAULT '',
-      favorite INTEGER DEFAULT 0,
-      created_at TEXT NOT NULL,
-      updated_at TEXT NOT NULL,
-      deleted INTEGER DEFAULT 0
-    );
-
-    CREATE TABLE IF NOT EXISTS outfits (
-      id TEXT PRIMARY KEY,
-      name TEXT DEFAULT '',
-      clothing_ids TEXT NOT NULL DEFAULT '[]',
-      notes TEXT DEFAULT '',
-      created_at TEXT NOT NULL,
-      updated_at TEXT NOT NULL,
-      deleted INTEGER DEFAULT 0
-    );
-
-    CREATE TABLE IF NOT EXISTS daily_logs (
-      id TEXT PRIMARY KEY,
-      date TEXT NOT NULL,
-      outfit_id TEXT,
-      clothing_ids TEXT DEFAULT '[]',
-      notes TEXT DEFAULT '',
-      image_uri TEXT,
-      created_at TEXT NOT NULL,
-      updated_at TEXT NOT NULL
-    );
-
-    CREATE TABLE IF NOT EXISTS sync_meta (
-      id TEXT PRIMARY KEY,
-      table_name TEXT NOT NULL,
-      last_synced TEXT,
-      version INTEGER DEFAULT 1
-    );
-
-    CREATE TABLE IF NOT EXISTS settings (
-      key TEXT PRIMARY KEY,
-      value TEXT NOT NULL
-    );
-  `);
-
-  // Seed default categories
-  const existingCats = await database.getAllAsync<{ count: number }>(
-    "SELECT COUNT(*) as count FROM categories"
-  );
-  if (existingCats[0]?.count === 0) {
-    for (const cat of DEFAULT_CATEGORIES) {
-      const id = `cat_${cat.name}`;
-      await database.runAsync(
-        "INSERT INTO categories (id, name, icon, sort_order) VALUES (?, ?, ?, ?)",
-        [id, cat.name, cat.icon, cat.sortOrder]
-      );
-    }
+// ====== 初始化 ======
+export async function initDatabase(): Promise<void> {
+  const cats = await getJson<Category[]>(STORAGE_KEYS.categories, []);
+  if (cats.length === 0) {
+    const defaults: Category[] = DEFAULT_CATEGORIES.map((c, i) => ({
+      ...c,
+      id: `cat_${c.name}`,
+      sortOrder: i + 1,
+    }));
+    await setJson(STORAGE_KEYS.categories, defaults);
   }
+}
+
+// ====== 衣物 ======
+export async function getAllClothing(): Promise<Clothing[]> {
+  return getJson<Clothing[]>(STORAGE_KEYS.clothing, []);
+}
+
+export async function getClothingByCategory(categoryId: string): Promise<Clothing[]> {
+  const items = await getAllClothing();
+  return items.filter((i) => i.categoryId === categoryId);
+}
+
+export async function getClothingById(id: string): Promise<Clothing | null> {
+  const items = await getAllClothing();
+  return items.find((i) => i.id === id) || null;
+}
+
+export async function addClothing(data: Omit<Clothing, "id" | "createdAt" | "updatedAt" | "deleted" | "favorite">): Promise<Clothing> {
+  const items = await getAllClothing();
+  const id = Date.now().toString(36) + Math.random().toString(36).slice(2);
+  const now = new Date().toISOString();
+  const item: Clothing = { ...data, id, favorite: 0, createdAt: now, updatedAt: now, deleted: 0 };
+  items.unshift(item);
+  await setJson(STORAGE_KEYS.clothing, items);
+  return item;
+}
+
+export async function updateClothing(id: string, data: Partial<Clothing>): Promise<void> {
+  const items = await getAllClothing();
+  const idx = items.findIndex((i) => i.id === id);
+  if (idx >= 0) {
+    items[idx] = { ...items[idx], ...data, updatedAt: new Date().toISOString() };
+    await setJson(STORAGE_KEYS.clothing, items);
+  }
+}
+
+export async function deleteClothing(id: string): Promise<void> {
+  const items = await getAllClothing();
+  await setJson(STORAGE_KEYS.clothing, items.filter((i) => i.id !== id));
+}
+
+// ====== 分类 ======
+export async function getCategories(): Promise<Category[]> {
+  return getJson<Category[]>(STORAGE_KEYS.categories, []);
+}
+
+// ====== 搭配 ======
+export async function getOutfits(): Promise<Outfit[]> {
+  return getJson<Outfit[]>(STORAGE_KEYS.outfits, []);
+}
+
+export async function addOutfit(data: Omit<Outfit, "id" | "createdAt" | "updatedAt" | "deleted">): Promise<Outfit> {
+  const items = await getOutfits();
+  const id = Date.now().toString(36) + Math.random().toString(36).slice(2);
+  const now = new Date().toISOString();
+  const item: Outfit = { ...data, id, createdAt: now, updatedAt: now, deleted: 0 };
+  items.unshift(item);
+  await setJson(STORAGE_KEYS.outfits, items);
+  return item;
+}
+
+export async function deleteOutfit(id: string): Promise<void> {
+  const items = await getOutfits();
+  await setJson(STORAGE_KEYS.outfits, items.filter((i) => i.id !== id));
+}
+
+// ====== 每日记录 ======
+export async function getDailyLogs(): Promise<DailyLog[]> {
+  return getJson<DailyLog[]>(STORAGE_KEYS.dailyLogs, []);
+}
+
+export async function addDailyLog(data: Omit<DailyLog, "id" | "createdAt" | "updatedAt">): Promise<DailyLog> {
+  const items = await getDailyLogs();
+  const id = Date.now().toString(36) + Math.random().toString(36).slice(2);
+  const now = new Date().toISOString();
+  const item: DailyLog = { ...data, id, createdAt: now, updatedAt: now };
+  items.unshift(item);
+  await setJson(STORAGE_KEYS.dailyLogs, items);
+  return item;
+}
+
+export async function getDailyLogByDate(date: string): Promise<DailyLog | null> {
+  const items = await getDailyLogs();
+  return items.find((l) => l.date === date) || null;
+}
+
+// ====== 设置 ======
+export async function getSetting(key: string): Promise<string | null> {
+  const settings = await getJson<Record<string, string>>(STORAGE_KEYS.settings, {});
+  return settings[key] || null;
+}
+
+export async function setSetting(key: string, value: string): Promise<void> {
+  const settings = await getJson<Record<string, string>>(STORAGE_KEYS.settings, {});
+  settings[key] = value;
+  await setJson(STORAGE_KEYS.settings, settings);
 }

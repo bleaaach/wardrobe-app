@@ -2,7 +2,7 @@ import { View, Text, FlatList, Pressable, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { getDatabase } from "../../src/db/database";
+import { getOutfits } from "../../src/db/database";
 import { Outfit } from "../../src/types";
 
 export default function OutfitsScreen() {
@@ -10,11 +10,7 @@ export default function OutfitsScreen() {
   const [outfits, setOutfits] = useState<Outfit[]>([]);
 
   useEffect(() => { loadOutfits(); }, []);
-  const loadOutfits = async () => {
-    const db = await getDatabase();
-    const data = await db.getAllAsync<Outfit>("SELECT * FROM outfits WHERE deleted = 0 ORDER BY created_at DESC");
-    setOutfits(data);
-  };
+  const loadOutfits = async () => setOutfits(await getOutfits());
 
   return (
     <View style={styles.container}>
@@ -24,9 +20,7 @@ export default function OutfitsScreen() {
         contentContainerStyle={styles.grid}
         renderItem={({ item }) => (
           <Pressable style={styles.card} onPress={() => router.push(`/outfits/${item.id}`)}>
-            <View style={styles.cardPreview}>
-              <Ionicons name="layers" size={40} color="#6366f1" />
-            </View>
+            <View style={styles.cardPreview}><Ionicons name="layers" size={40} color="#6366f1" /></View>
             <Text style={styles.cardName}>{item.name || "搭配"}</Text>
             <Text style={styles.cardDate}>{new Date(item.createdAt).toLocaleDateString("zh-CN")}</Text>
           </Pressable>
