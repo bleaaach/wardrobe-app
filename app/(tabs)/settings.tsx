@@ -58,6 +58,23 @@ export default function SettingsScreen() {
       </View>
 
       {/* Import */}
+      <Text style={S.sectionTitle}>数据管理</Text>
+      <View style={S.card}>
+        <Pressable style={S.importBtn} onPress={() => {
+          Alert.alert("清空衣橱", "确定要删除所有衣物吗？此操作不可恢复", [
+            { text: "取消", style: "cancel" },
+            { text: "清空", style: "destructive", onPress: async () => {
+              const store = useClothingStore.getState();
+              for (const item of store.items) await store.deleteItem(item.id);
+              Alert.alert("完成", "已清空衣橱");
+            } },
+          ]);
+        }}>
+          <Ionicons name="trash" size={20} color={Colors.danger} />
+          <Text style={[S.importText, { color: Colors.danger }]}>清空衣橱</Text>
+        </Pressable>
+      </View>
+
       <Text style={S.sectionTitle}>数据导入</Text>
       <View style={S.card}>
         <Pressable
