@@ -1,6 +1,13 @@
 import JSZip from "jszip";
-import { Clothing, Outfit, DailyLog } from "../types";
+import { Clothing } from "../types";
 import { getAllClothing, addClothing } from "../db/database";
+
+// Global image cache using Blob URLs (persist for session on web)
+const imageUrlCache = new Map<string, string>();
+
+export function getCachedImageUrl(uuid: string): string | undefined {
+  return imageUrlCache.get(uuid.toUpperCase());
+}
 
 // 分类映射: 上装→上衣, 下装→裤子, 鞋→鞋子, 连体→裙子, 外套→外套, 配饰→配饰, 包包→包包
 const CAT_MAP: Record<string, string> = {
@@ -96,15 +103,25 @@ export async function importClosetData(
       // 跳过已存在的
       if (c.name && existingNames.has(c.name.toLowerCase())) continue;
 
-      // 获取图片
+      // 获取图片 - 用 Blob URL（浏览器内存）存储
       const imgUUID = (c.imageDataUUID || "").toUpperCase();
       let imageUri = "";
-      if (imageFiles.has(imgUUID) && !imageCache.has(imgUUID)) {
-        const blob = await imageFiles.get(imgUUID)!.async("base64");
-        const dataURI = `data:image/png;base64,${blob}`;
-        imageCache.set(imgUUID, dataURI);
+      if (imageFiles.has(imgUUID)) {
+        if (!imageCache.has(imgUUID)) {
+          const base64 = await imageFiles.get(imgUUID)!.async("base64");
+          const byteChars = atob(base64);
+          const byteNums = new Array(byteChars.length);
+          for (let j = 0; j < byteChars.length; j++) byteNums[j] = byteChars.charCodeAt(j);
+          const byteArr = new Uint8Array(byteNums);
+          const blob = new Blob([byteArr], { type: "image/png" });
+          const url = URL.createObjectURL(blob);
+          imageCache.set(imgUUID, url);
+          imageUrlCache.set(imgUUID, url);
+        }
+        imageUri = imageCache.get(imgUUID) || "";
       }
-      imageUri = imageCache.get(imgUUID) || "";
+
+      if (!imageUri) continue; // Skip items without images
 
       const catInfo = catMap.get((c.categoryUUID || "").toUpperCase());
       const categoryId = mapCategory(catInfo?.name || "", catInfo?.subName);
