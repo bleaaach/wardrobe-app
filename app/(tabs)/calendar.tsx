@@ -1,84 +1,70 @@
 import { View, Text, ScrollView, Pressable, StyleSheet } from "react-native";
 import { useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
+import { Colors, Spacing, Radius, FontSize } from "../../src/design/tokens";
 
 export default function CalendarScreen() {
-  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
-  const [currentYear] = useState(new Date().getFullYear());
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10));
-
-  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-  const firstDay = new Date(currentYear, currentMonth, 1).getDay();
-  const today = new Date().toISOString().slice(0, 10);
-  const monthNames = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"];
-
-  const prevMonth = () => setCurrentMonth((m) => (m === 0 ? 11 : m - 1));
-  const nextMonth = () => setCurrentMonth((m) => (m === 11 ? 0 : m + 1));
-
-  const weekDays = ["日", "一", "二", "三", "四", "五", "六"];
+  const date = new Date();
+  const [month, setMonth] = useState(date.getMonth());
+  const [year] = useState(date.getFullYear());
+  const [selected, setSelected] = useState(date.toISOString().slice(0, 10));
+  const today = date.toISOString().slice(0, 10);
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstDay = new Date(year, month, 1).getDay();
+  const months = ["1月","2月","3月","4月","5月","6月","7月","8月","9月","10月","11月","12月"];
+  const weeks = ["日","一","二","三","四","五","六"];
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* Month Navigator */}
-      <View style={styles.monthNav}>
-        <Pressable onPress={prevMonth}><Ionicons name="chevron-back" size={24} color="#6366f1" /></Pressable>
-        <Text style={styles.monthTitle}>{currentYear}年 {monthNames[currentMonth]}</Text>
-        <Pressable onPress={nextMonth}><Ionicons name="chevron-forward" size={24} color="#6366f1" /></Pressable>
+    <ScrollView style={S.container} contentContainerStyle={S.content}>
+      <View style={S.nav}>
+        <Pressable onPress={() => setMonth((m) => (m === 0 ? 11 : m - 1))}><Ionicons name="chevron-back" size={20} color={Colors.textSecondary} /></Pressable>
+        <Text style={S.month}>{year}年 {months[month]}</Text>
+        <Pressable onPress={() => setMonth((m) => (m === 11 ? 0 : m + 1))}><Ionicons name="chevron-forward" size={20} color={Colors.textSecondary} /></Pressable>
       </View>
 
-      {/* Weekday Headers */}
-      <View style={styles.weekRow}>
-        {weekDays.map((d) => (
-          <Text key={d} style={styles.weekDay}>{d}</Text>
-        ))}
-      </View>
+      <View style={S.weekRow}>{weeks.map((d) => <Text key={d} style={S.weekDay}>{d}</Text>)}</View>
 
-      {/* Calendar Grid */}
-      <View style={styles.calGrid}>
-        {Array.from({ length: firstDay }).map((_, i) => (
-          <View key={`empty-${i}`} style={styles.dayCell} />
-        ))}
+      <View style={S.grid}>
+        {Array.from({ length: firstDay }).map((_, i) => <View key={`e-${i}`} style={S.day} />)}
         {Array.from({ length: daysInMonth }).map((_, i) => {
-          const day = i + 1;
-          const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-          const isToday = dateStr === today;
-          const isSelected = dateStr === selectedDate;
+          const d = i + 1;
+          const ds = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+          const isToday = ds === today;
+          const isSel = ds === selected;
           return (
-            <Pressable key={day} style={[styles.dayCell, isSelected && styles.daySelected, isToday && styles.dayToday]} onPress={() => setSelectedDate(dateStr)}>
-              <Text style={[styles.dayText, isSelected && styles.dayTextSelected, isToday && styles.dayTextToday]}>{day}</Text>
+            <Pressable key={d} style={[S.day, isSel && S.daySel, isToday && !isSel && S.dayToday]} onPress={() => setSelected(ds)}>
+              <Text style={[S.dayText, isSel && S.dayTextSel, isToday && !isSel && S.dayTextToday]}>{d}</Text>
+              {isToday && <View style={[S.dot, isSel && S.dotWhite]} />}
             </Pressable>
           );
         })}
       </View>
 
-      {/* Selected Date */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>📅 {selectedDate}</Text>
-        <View style={styles.emptyState}>
-          <Ionicons name="shirt-outline" size={40} color="#d1d5db" />
-          <Text style={styles.emptyText}>这天还没有穿搭记录</Text>
-        </View>
+      <View style={S.card}>
+        <Text style={S.cardTitle}>{selected}</Text>
+        <Text style={S.cardSub}>暂无穿搭记录</Text>
       </View>
     </ScrollView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f3f4f6" },
-  content: { padding: 16 },
-  monthNav: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 },
-  monthTitle: { fontSize: 18, fontWeight: "700", color: "#111827" },
-  weekRow: { flexDirection: "row", marginBottom: 4 },
-  weekDay: { flex: 1, textAlign: "center", fontSize: 12, color: "#9ca3af", paddingVertical: 8 },
-  calGrid: { flexDirection: "row", flexWrap: "wrap", backgroundColor: "#fff", borderRadius: 16, padding: 4 },
-  dayCell: { width: "14.28%", aspectRatio: 1, justifyContent: "center", alignItems: "center" },
-  daySelected: { backgroundColor: "#6366f1", borderRadius: 12 },
-  dayToday: { backgroundColor: "#eef2ff", borderRadius: 12 },
-  dayText: { fontSize: 15, color: "#374151" },
-  dayTextSelected: { color: "#fff", fontWeight: "600" },
-  dayTextToday: { color: "#6366f1", fontWeight: "600" },
-  card: { backgroundColor: "#fff", borderRadius: 16, padding: 16, marginTop: 20 },
-  cardTitle: { fontSize: 16, fontWeight: "600", color: "#111827", marginBottom: 12 },
-  emptyState: { alignItems: "center", paddingVertical: 24 },
-  emptyText: { color: "#9ca3af", marginTop: 8 },
+const S = StyleSheet.create({
+  container: { flex: 1, backgroundColor: Colors.bg },
+  content: { padding: Spacing.xl },
+  nav: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: Spacing.xxl },
+  month: { fontSize: FontSize.lg, fontWeight: "600", color: Colors.textPrimary },
+  weekRow: { flexDirection: "row", marginBottom: Spacing.sm },
+  weekDay: { flex: 1, textAlign: "center", fontSize: FontSize.xs, color: Colors.textTertiary, paddingVertical: Spacing.sm },
+  grid: { flexDirection: "row", flexWrap: "wrap" },
+  day: { width: "14.28%", aspectRatio: 1, justifyContent: "center", alignItems: "center" },
+  daySel: { backgroundColor: Colors.accent, borderRadius: Radius.full },
+  dayToday: { backgroundColor: Colors.accentLight, borderRadius: Radius.full },
+  dayText: { fontSize: FontSize.base, color: Colors.textPrimary },
+  dayTextSel: { color: Colors.textInverse, fontWeight: "600" },
+  dayTextToday: { color: Colors.accent, fontWeight: "600" },
+  dot: { width: 4, height: 4, borderRadius: 2, backgroundColor: Colors.accent, position: "absolute", bottom: 6 },
+  dotWhite: { backgroundColor: Colors.textInverse },
+  card: { backgroundColor: Colors.surface, borderRadius: Radius.lg, padding: Spacing.xl, marginTop: Spacing.xxl, alignItems: "center" },
+  cardTitle: { fontSize: FontSize.base, fontWeight: "600", color: Colors.textPrimary },
+  cardSub: { fontSize: FontSize.sm, color: Colors.textTertiary, marginTop: Spacing.sm },
 });

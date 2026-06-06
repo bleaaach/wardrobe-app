@@ -1,8 +1,9 @@
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
-import { Text, View } from "react-native";
+import { View, Text } from "react-native";
 import { useClothingStore } from "../src/store/clothingStore";
+import { Colors, FontSize } from "../src/design/tokens";
 
 export default function RootLayout() {
   const [ready, setReady] = useState(false);
@@ -10,19 +11,14 @@ export default function RootLayout() {
   const loadCategories = useClothingStore((s) => s.loadCategories);
 
   useEffect(() => {
-    async function init() {
-      await loadCategories();
-      await loadClothing();
-      setReady(true);
-    }
-    init();
+    (async () => { await loadCategories(); await loadClothing(); setReady(true); })();
   }, []);
 
   if (!ready) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#fff" }}>
-        <Text style={{ fontSize: 32 }}>👗</Text>
-        <Text style={{ marginTop: 12, color: "#666" }}>加载中...</Text>
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: Colors.bg }}>
+        <Text style={{ fontSize: 40 }}>👗</Text>
+        <Text style={{ marginTop: 12, color: Colors.textSecondary, fontSize: FontSize.base }}>加载中...</Text>
       </View>
     );
   }
@@ -30,12 +26,12 @@ export default function RootLayout() {
   return (
     <>
       <StatusBar style="dark" />
-      <Stack screenOptions={{ headerShown: false }}>
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Colors.bg } }}>
         <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="closet/add" options={{ presentation: "modal", title: "添加衣物" }} />
-        <Stack.Screen name="closet/[id]" options={{ presentation: "modal", title: "衣物详情" }} />
-        <Stack.Screen name="outfits/create" options={{ presentation: "modal", title: "创建搭配" }} />
-        <Stack.Screen name="outfits/[id]" options={{ presentation: "modal", title: "搭配详情" }} />
+        <Stack.Screen name="closet/add" options={{ presentation: "modal" }} />
+        <Stack.Screen name="closet/[id]" options={{ presentation: "modal" }} />
+        <Stack.Screen name="outfits/create" options={{ presentation: "modal" }} />
+        <Stack.Screen name="outfits/[id]" options={{ presentation: "modal" }} />
       </Stack>
     </>
   );
