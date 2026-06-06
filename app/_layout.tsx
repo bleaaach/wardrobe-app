@@ -37,6 +37,7 @@ export default function RootLayout() {
         <Stack.Screen name="settings/categories" options={{ presentation: "modal" }} />
         <Stack.Screen name="settings/archive" options={{ presentation: "modal" }} />
         <Stack.Screen name="settings/statistics" options={{ presentation: "modal" }} />
+        <Stack.Screen name="calendar/select-clothing" options={{ presentation: "modal" }} />
       </Stack>
     </>
   );

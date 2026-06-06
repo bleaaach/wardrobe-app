@@ -16,14 +16,20 @@ export default function ClosetScreen() {
   const items = useClothingStore((s) => s.items);
   const categories = useClothingStore((s) => s.categories);
   const loadClothing = useClothingStore((s) => s.loadClothing);
+
   const [selectedParent, setSelectedParent] = useState<string | null>(null);
+  const [selectedSub, setSelectedSub] = useState<string | null>(null);
+  const [sidebarMode, setSidebarMode] = useState<"parents" | "subs">("parents");
 
   useEffect(() => { loadClothing(); }, []);
 
   // Handle sub-cat filter from sub-category page
   useEffect(() => {
     if (params.subCat) {
-      setSelectedParent(null);
+      const pid = parentOf.get(params.subCat) || null;
+      setSelectedParent(pid);
+      setSelectedSub(params.subCat);
+      if (pid) setSidebarMode("subs");
     }
   }, [params.subCat]);
 
@@ -40,19 +46,56 @@ export default function ClosetScreen() {
   }, [categories]);
 
   const filtered = useMemo(() => {
-    if (params.subCat) return items.filter((i) => i.categoryId === params.subCat);
+    if (selectedSub) return items.filter((i) => i.categoryId === selectedSub);
     if (selectedParent) {
       const subIds = new Set((subsByParent.get(selectedParent) || []).map((c) => c.id));
       return items.filter((i) => subIds.has(i.categoryId));
     }
     return items;
-  }, [items, selectedParent, params.subCat, subsByParent]);
+  }, [items, selectedParent, selectedSub, subsByParent]);
 
   const catName = (id: string) => categories.find((c) => c.id === id)?.name || "";
-  const activeParentName = selectedParent ? parents.find((p) => p.id === selectedParent)?.name : null;
-  const activeSubName = params.subCat ? catName(params.subCat) : null;
 
-  const sidebarData = useMemo(() => [{ id: "all", name: "全部" }, ...parents], [parents]);
+  const sidebarData = useMemo(() => {
+    if (sidebarMode === "parents") {
+      return [{ id: "all", name: "全部" }, ...parents];
+    }
+    // subs mode
+    const subs = subsByParent.get(selectedParent!) || [];
+    return [{ id: "__all__", name: "全部" }, ...subs];
+  }, [sidebarMode, parents, subsByParent, selectedParent]);
+
+  const activeSidebarId = useMemo(() => {
+    if (sidebarMode === "parents") {
+      return selectedParent || "all";
+    }
+    return selectedSub || "__all__";
+  }, [sidebarMode, selectedParent, selectedSub]);
+
+  const handleSidebarPress = (id: string) => {
+    if (sidebarMode === "parents") {
+      if (id === "all") {
+        setSelectedParent(null);
+        setSelectedSub(null);
+      } else {
+        setSelectedParent(id);
+        setSelectedSub(null);
+        setSidebarMode("subs");
+      }
+    } else {
+      if (id === "__all__") {
+        setSelectedSub(null);
+      } else {
+        setSelectedSub(id);
+      }
+    }
+  };
+
+  const handleBackToParents = () => {
+    setSidebarMode("parents");
+    setSelectedParent(null);
+    setSelectedSub(null);
+  };
 
   return (
     <View style={S.container}>
@@ -66,19 +109,22 @@ export default function ClosetScreen() {
       <View style={S.body}>
         {/* Left Sidebar */}
         <View style={S.sidebar}>
+          {sidebarMode === "subs" && (
+            <Pressable style={S.backBtn} onPress={handleBackToParents}>
+              <Ionicons name="chevron-back" size={18} color={Colors.accent} />
+              <Text style={S.backText}>返回</Text>
+            </Pressable>
+          )}
           <FlatList
             data={sidebarData}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingVertical: Spacing.sm }}
             renderItem={({ item }) => {
-              const active = item.id === "all" ? !selectedParent && !params.subCat : selectedParent === item.id;
+              const active = activeSidebarId === item.id;
               return (
                 <Pressable
                   style={[S.sidebarItem, active && S.sidebarItemActive]}
-                  onPress={() => {
-                    setSelectedParent(item.id === "all" ? null : item.id);
-                    router.setParams({});
-                  }}
+                  onPress={() => handleSidebarPress(item.id)}
                 >
                   {active && <View style={S.sidebarIndicator} />}
                   <Text style={[S.sidebarText, active && S.sidebarTextActive]} numberOfLines={2}>
@@ -93,21 +139,6 @@ export default function ClosetScreen() {
 
         {/* Right Content */}
         <View style={S.content}>
-          {/* Active Filter Title */}
-          {(activeParentName || activeSubName) && (
-            <Pressable
-              style={S.filterTitleWrap}
-              onPress={() => {
-                const pid = params.subCat ? parentOf.get(params.subCat) : selectedParent;
-                if (pid) router.push(`/closet/categories?parentId=${pid}`);
-              }}
-            >
-              <Text style={S.filterTitle}>{activeSubName || activeParentName}</Text>
-              <Ionicons name="chevron-forward" size={16} color={Colors.accent} />
-              <Text style={S.filterHint}>查看子分类</Text>
-            </Pressable>
-          )}
-
           {/* Grid */}
           <FlatList
             data={filtered}
@@ -161,6 +192,20 @@ const S = StyleSheet.create({
     borderRightWidth: 1,
     borderRightColor: Colors.border,
   },
+  backBtn: {
+    height: 48,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+    gap: 2,
+  },
+  backText: {
+    fontSize: FontSize.sm,
+    fontWeight: "600",
+    color: Colors.accent,
+  },
   sidebarItem: {
     height: 64,
     justifyContent: "center",
@@ -193,17 +238,6 @@ const S = StyleSheet.create({
   },
 
   content: { flex: 1 },
-
-  filterTitleWrap: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: Spacing.xl,
-    paddingTop: Spacing.sm,
-    marginBottom: Spacing.md,
-    gap: 6,
-  },
-  filterTitle: { fontSize: FontSize.lg, fontWeight: "700", color: Colors.textPrimary },
-  filterHint: { fontSize: FontSize.sm, color: Colors.accent, fontWeight: "500" },
 
   grid: { paddingHorizontal: Spacing.md, paddingBottom: 120 },
   item: {

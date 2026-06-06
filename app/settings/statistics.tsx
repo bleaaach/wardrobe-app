@@ -9,7 +9,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useClothingStore } from "../../src/store/clothingStore";
 import { Header } from "../../src/components/ui/Header";
-import { Colors, Spacing, Radius, FontSize, PressedOpacity } from "../../src/design/tokens";
+import { Colors, Spacing, Radius, FontSize } from "../../src/design/tokens";
 
 function parsePrice(p: string): number {
   const n = parseFloat(p.replace(/[^0-9.]/g, ""));
@@ -38,7 +38,7 @@ function getWearLabel(n: number): string {
 interface StatItem {
   label: string;
   count: number;
-  value?: number;
+  value?: number; // 用于价格汇总
   avgPrice?: number;
   totalPrice?: number;
 }
@@ -55,7 +55,9 @@ interface SectionData {
 export default function StatisticsScreen() {
   const items = useClothingStore((s) => s.items);
   const categories = useClothingStore((s) => s.categories);
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({
+    "类别统计": true,
+  });
 
   const catMap = useMemo(() => {
     const map: Record<string, string> = {};
@@ -89,6 +91,7 @@ export default function StatisticsScreen() {
   }, [items]);
 
   const sections: SectionData[] = useMemo(() => {
+    // 1. 类别
     const catAgg: Record<string, StatItem> = {};
     for (const i of items) {
       const label = parentCatName(i.categoryId);
@@ -104,6 +107,7 @@ export default function StatisticsScreen() {
     }));
     catItems.sort((a, b) => b.count - a.count);
 
+    // 2. 品牌
     const brandAgg: Record<string, StatItem> = {};
     for (const i of items) {
       const label = i.brand.trim() || "未设置";
@@ -112,6 +116,7 @@ export default function StatisticsScreen() {
     }
     const brandItems = Object.values(brandAgg).sort((a, b) => b.count - a.count);
 
+    // 3. 颜色
     const colorAgg: Record<string, StatItem> = {};
     for (const i of items) {
       const label = i.color.trim() || "未设置";
@@ -120,6 +125,7 @@ export default function StatisticsScreen() {
     }
     const colorItems = Object.values(colorAgg).sort((a, b) => b.count - a.count);
 
+    // 4. 位置
     const locAgg: Record<string, StatItem> = {};
     for (const i of items) {
       const label = i.location.trim() || "未设置";
@@ -128,6 +134,7 @@ export default function StatisticsScreen() {
     }
     const locItems = Object.values(locAgg).sort((a, b) => b.count - a.count);
 
+    // 5. 价格区间
     const priceAgg: Record<string, StatItem> = {};
     for (const i of items) {
       const p = parsePrice(i.price);
@@ -141,6 +148,7 @@ export default function StatisticsScreen() {
       return order.indexOf(a.label) - order.indexOf(b.label);
     });
 
+    // 6. 穿着频率
     const wearAgg: Record<string, StatItem> = {};
     for (const i of items) {
       const label = getWearLabel(i.wearCount || 0);
@@ -198,164 +206,97 @@ export default function StatisticsScreen() {
   const toggle = (key: string) =>
     setExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
 
-  const overviewData = [
-    {
-      label: "总件数",
-      value: String(summary.total),
-      icon: "shirt-outline" as const,
-      color: Colors.accent,
-    },
-    {
-      label: "总价值",
-      value: formatCurrency(summary.totalPrice),
-      icon: "wallet-outline" as const,
-      color: Colors.success,
-    },
-    {
-      label: "品牌数",
-      value: String(summary.brands),
-      icon: "pricetag-outline" as const,
-      color: Colors.catShoes,
-    },
-    {
-      label: "颜色数",
-      value: String(summary.colors),
-      icon: "color-palette-outline" as const,
-      color: Colors.catDress,
-    },
-  ];
-
   return (
     <ScrollView style={S.container} showsVerticalScrollIndicator={false}>
       <Header title="统计信息" subtitle="洞察你的衣橱数据" />
 
-      {/* Overview Cards */}
-      <View style={S.overviewGrid}>
-        {overviewData.map((o, i) => (
-          <View key={i} style={S.overviewCard}>
-            <View
-              style={[
-                S.overviewIcon,
-                { backgroundColor: o.color + "22" },
-              ]}
-            >
-              <Ionicons name={o.icon} size={20} color={o.color} />
-            </View>
-            <Text style={[S.overviewValue, { color: o.color }]}>
-              {o.value}
-            </Text>
-            <Text style={S.overviewLabel}>{o.label}</Text>
-          </View>
-        ))}
+      {/* Summary Cards */}
+      <View style={S.summaryRow}>
+        <View style={[S.summaryCard, { flex: 1 }]}>
+          <Text style={S.summaryNum}>{summary.total}</Text>
+          <Text style={S.summaryLabel}>总件数</Text>
+        </View>
+        <View style={[S.summaryCard, { flex: 1 }]}>
+          <Text style={S.summaryNum}>{formatCurrency(summary.totalPrice)}</Text>
+          <Text style={S.summaryLabel}>总价值</Text>
+        </View>
       </View>
-
-      {/* Highlight: Top Wear */}
+      <View style={S.summaryRow}>
+        <View style={[S.summaryCard, { flex: 1 }]}>
+          <Text style={S.summaryNum}>{summary.brands}</Text>
+          <Text style={S.summaryLabel}>品牌数</Text>
+        </View>
+        <View style={[S.summaryCard, { flex: 1 }]}>
+          <Text style={S.summaryNum}>{summary.colors}</Text>
+          <Text style={S.summaryLabel}>颜色数</Text>
+        </View>
+      </View>
       {summary.topItem && (
-        <View style={S.highlightCard}>
-          <View style={S.highlightLeft}>
-            <View style={S.highlightBadge}>
-              <Ionicons name="flame" size={14} color={Colors.accent} />
-              <Text style={S.highlightBadgeText}>最常穿</Text>
-            </View>
-            <Text style={S.highlightName}>{summary.topItem.name}</Text>
-          </View>
-          <View style={S.highlightRight}>
-            <Text style={S.highlightNum}>{summary.maxWear}</Text>
-            <Text style={S.highlightUnit}>次穿着</Text>
-          </View>
+        <View style={S.topWearCard}>
+          <Ionicons name="flame" size={18} color={Colors.accent} />
+          <Text style={S.topWearText}>
+            最常穿：{summary.topItem.name}（{summary.maxWear}次）
+          </Text>
         </View>
       )}
 
-      {/* Section Cards Grid */}
-      <View style={S.sectionGrid}>
+      {/* Sections */}
+      <View style={{ paddingHorizontal: Spacing.xl, paddingBottom: 40 }}>
         {sections.map((sec) => {
-          const isOpen = !!expanded[sec.title];
+          const key = sec.title;
+          const isOpen = expanded[key];
           return (
-            <Pressable
-              key={sec.title}
-              style={({ pressed }) => [
-                S.sectionCard,
-                pressed && { opacity: PressedOpacity },
-              ]}
-              onPress={() => toggle(sec.title)}
-            >
-              <View style={S.cardHeader}>
-                <View style={S.cardIconWrap}>
-                  <Ionicons
-                    name={sec.icon as any}
-                    size={16}
-                    color={Colors.accent}
-                  />
+            <View key={key} style={S.sectionCard}>
+              <Pressable
+                style={({ pressed }) => [
+                  S.sectionHeader,
+                  pressed && { backgroundColor: Colors.surfaceHighlight },
+                ]}
+                onPress={() => toggle(key)}
+              >
+                <View style={S.sectionIcon}>
+                  <Ionicons name={sec.icon as any} size={18} color={Colors.accent} />
                 </View>
-                <Text style={S.cardTitle}>{sec.title}</Text>
+                <Text style={S.sectionTitle}>{key}</Text>
                 <Ionicons
                   name={isOpen ? "chevron-up" : "chevron-down"}
                   size={16}
                   color={Colors.textTertiary}
                 />
-              </View>
-
-              <Text style={S.cardBigNum}>
-                {sec.items.length}
-                <Text style={S.cardBigUnit}> 项</Text>
-              </Text>
-
-              <View style={S.previewList}>
-                {sec.items.slice(0, 3).map((it, idx) => {
-                  const pct = (it.count / sec.max) * 100;
-                  return (
-                    <View key={idx} style={S.previewRow}>
-                      <Text style={S.previewLabel} numberOfLines={1}>
-                        {it.label}
-                      </Text>
-                      <View style={S.previewTrack}>
-                        <View
-                          style={[
-                            S.previewFill,
-                            { width: `${Math.max(4, pct)}%` },
-                          ]}
-                        />
-                      </View>
-                      <Text style={S.previewCount}>{it.count}</Text>
-                    </View>
-                  );
-                })}
-                {sec.items.length > 3 && (
-                  <Text style={S.previewMore}>
-                    +{sec.items.length - 3} 更多
-                  </Text>
-                )}
-              </View>
+              </Pressable>
 
               {isOpen && (
-                <View style={S.detailList}>
+                <View style={S.sectionBody}>
+                  {sec.items.length === 0 && (
+                    <Text style={S.emptyText}>暂无数据</Text>
+                  )}
                   {sec.items.map((it, idx) => {
                     const pct = (it.count / sec.max) * 100;
                     return (
-                      <View key={idx} style={S.detailRow}>
-                        <View style={S.detailTop}>
-                          <Text style={S.detailLabel} numberOfLines={1}>
+                      <View key={idx} style={S.barRow}>
+                        <View style={S.barLabelRow}>
+                          <Text style={S.barLabel} numberOfLines={1}>
                             {it.label}
                           </Text>
-                          <Text style={S.detailCount}>
+                          <Text style={S.barCount}>
                             {it.count}
                             {sec.unit || "件"}
                           </Text>
                         </View>
-                        <View style={S.detailTrack}>
+                        <View style={S.barTrack}>
                           <View
                             style={[
-                              S.detailFill,
+                              S.barFill,
                               { width: `${Math.max(4, pct)}%` },
                             ]}
                           />
                         </View>
                         {sec.showPrice && (
-                          <View style={S.priceRow}>
-                            <Text style={S.priceText}>
+                          <View style={S.priceMetaRow}>
+                            <Text style={S.priceMeta}>
                               总价 {formatCurrency(it.totalPrice || 0)}
                             </Text>
-                            <Text style={S.priceText}>
+                            <Text style={S.priceMeta}>
                               均价 {formatCurrency(it.avgPrice || 0)}
                             </Text>
                           </View>
@@ -365,12 +306,10 @@ export default function StatisticsScreen() {
                   })}
                 </View>
               )}
-            </Pressable>
+            </View>
           );
         })}
       </View>
-
-      <View style={{ height: 40 }} />
     </ScrollView>
   );
 }
@@ -378,215 +317,127 @@ export default function StatisticsScreen() {
 const S = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bg },
 
-  // Overview
-  overviewGrid: {
+  summaryRow: {
     flexDirection: "row",
-    flexWrap: "wrap",
     gap: Spacing.md,
     paddingHorizontal: Spacing.xl,
-    marginBottom: Spacing.lg,
-  },
-  overviewCard: {
-    flex: 1,
-    minWidth: 130,
-    backgroundColor: Colors.surfaceElevated,
-    borderRadius: Radius.lg,
-    padding: Spacing.lg,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  overviewIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: Spacing.sm,
-  },
-  overviewValue: {
-    fontSize: FontSize.xxl,
-    fontWeight: "800",
-    letterSpacing: -0.5,
-  },
-  overviewLabel: {
-    fontSize: FontSize.sm,
-    color: Colors.textSecondary,
-    marginTop: 2,
-  },
-
-  // Highlight
-  highlightCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginHorizontal: Spacing.xl,
-    marginBottom: Spacing.xxl,
-    backgroundColor: Colors.surfaceElevated,
-    borderRadius: Radius.lg,
-    padding: Spacing.lg,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderLeftWidth: 4,
-    borderLeftColor: Colors.accent,
-  },
-  highlightLeft: { flex: 1 },
-  highlightBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    marginBottom: Spacing.sm,
-  },
-  highlightBadgeText: {
-    fontSize: FontSize.xs,
-    fontWeight: "700",
-    color: Colors.accent,
-    letterSpacing: 0.5,
-  },
-  highlightName: {
-    fontSize: FontSize.lg,
-    fontWeight: "700",
-    color: Colors.textPrimary,
-  },
-  highlightRight: { alignItems: "flex-end" },
-  highlightNum: {
-    fontSize: FontSize.xxl,
-    fontWeight: "800",
-    color: Colors.accent,
-  },
-  highlightUnit: {
-    fontSize: FontSize.sm,
-    color: Colors.textSecondary,
-  },
-
-  // Grid
-  sectionGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: Spacing.md,
-    paddingHorizontal: Spacing.xl,
-  },
-  sectionCard: {
-    flex: 1,
-    minWidth: 140,
-    backgroundColor: Colors.surfaceElevated,
-    borderRadius: Radius.lg,
-    padding: Spacing.lg,
-    borderWidth: 1,
-    borderColor: Colors.border,
     marginBottom: Spacing.md,
   },
-  cardHeader: {
+  summaryCard: {
+    backgroundColor: Colors.surfaceElevated,
+    borderRadius: Radius.lg,
+    padding: Spacing.lg,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    alignItems: "center",
+  },
+  summaryNum: {
+    fontSize: FontSize.xl,
+    fontWeight: "800",
+    color: Colors.accent,
+    letterSpacing: -0.5,
+  },
+  summaryLabel: {
+    fontSize: FontSize.sm,
+    color: Colors.textSecondary,
+    marginTop: 4,
+  },
+  topWearCard: {
     flexDirection: "row",
     alignItems: "center",
     gap: Spacing.sm,
-    marginBottom: Spacing.sm,
+    marginHorizontal: Spacing.xl,
+    marginBottom: Spacing.xxl,
+    backgroundColor: Colors.accentLight,
+    borderRadius: Radius.lg,
+    padding: Spacing.lg,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
-  cardIconWrap: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
+  topWearText: {
+    fontSize: FontSize.base,
+    color: Colors.textPrimary,
+    fontWeight: "600",
+  },
+
+  sectionCard: {
+    backgroundColor: Colors.surfaceElevated,
+    borderRadius: Radius.xl,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    marginBottom: Spacing.lg,
+    overflow: "hidden",
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: Spacing.lg,
+    gap: Spacing.md,
+  },
+  sectionIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
     backgroundColor: Colors.accentLight,
     justifyContent: "center",
     alignItems: "center",
   },
-  cardTitle: {
+  sectionTitle: {
     flex: 1,
-    fontSize: FontSize.sm,
+    fontSize: FontSize.base,
     fontWeight: "600",
     color: Colors.textPrimary,
   },
-  cardBigNum: {
-    fontSize: FontSize.xl,
-    fontWeight: "800",
-    color: Colors.accent,
-    marginBottom: Spacing.sm,
-  },
-  cardBigUnit: {
-    fontSize: FontSize.sm,
-    fontWeight: "400",
-    color: Colors.textSecondary,
-  },
-
-  // Preview
-  previewList: { gap: 6 },
-  previewRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  previewLabel: {
-    fontSize: FontSize.xs,
-    color: Colors.textSecondary,
-    width: 56,
-  },
-  previewTrack: {
-    flex: 1,
-    height: 4,
-    backgroundColor: Colors.surface,
-    borderRadius: 2,
-    overflow: "hidden",
-  },
-  previewFill: {
-    height: "100%",
-    backgroundColor: Colors.accentMuted,
-    borderRadius: 2,
-  },
-  previewCount: {
-    fontSize: FontSize.xs,
-    color: Colors.textTertiary,
-    width: 22,
-    textAlign: "right",
-  },
-  previewMore: {
-    fontSize: FontSize.xs,
-    color: Colors.textTertiary,
-    marginTop: 2,
-  },
-
-  // Detail
-  detailList: {
-    marginTop: Spacing.md,
-    paddingTop: Spacing.md,
-    borderTopWidth: 1,
-    borderColor: Colors.divider,
+  sectionBody: {
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.lg,
     gap: Spacing.md,
   },
-  detailRow: { gap: 4 },
-  detailTop: {
+  emptyText: {
+    textAlign: "center",
+    color: Colors.textTertiary,
+    fontSize: FontSize.sm,
+    paddingVertical: Spacing.md,
+  },
+
+  barRow: {
+    gap: 4,
+  },
+  barLabelRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-  detailLabel: {
+  barLabel: {
     fontSize: FontSize.sm,
     color: Colors.textPrimary,
     fontWeight: "500",
     flex: 1,
     marginRight: Spacing.sm,
   },
-  detailCount: {
+  barCount: {
     fontSize: FontSize.sm,
     color: Colors.accent,
     fontWeight: "700",
   },
-  detailTrack: {
+  barTrack: {
     height: 8,
     backgroundColor: Colors.surface,
     borderRadius: 4,
     overflow: "hidden",
   },
-  detailFill: {
+  barFill: {
     height: "100%",
     backgroundColor: Colors.accent,
     borderRadius: 4,
     opacity: 0.9,
   },
-  priceRow: {
+  priceMetaRow: {
     flexDirection: "row",
     gap: Spacing.md,
     marginTop: 2,
   },
-  priceText: {
+  priceMeta: {
     fontSize: FontSize.xs,
     color: Colors.textTertiary,
   },

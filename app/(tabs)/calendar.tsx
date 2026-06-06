@@ -10,14 +10,18 @@ import {
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
 import {
   getDailyLogs,
   getOutfits,
   getAllClothing,
   deleteDailyLog,
+  addDailyLog,
+  getDailyLogByDate,
 } from "../../src/db/database";
 import { DailyLog, Outfit, Clothing } from "../../src/types";
 import { OutfitPreview } from "../../src/components/OutfitPreview";
+import { AsyncImage } from "../../src/components/AsyncImage";
 import {
   Colors,
   Spacing,
@@ -28,6 +32,12 @@ import {
 
 const SCREEN_W = Dimensions.get("window").width;
 const DAY_SIZE = (SCREEN_W - Spacing.xl * 2 - Spacing.xl * 2) / 7;
+
+function getPrevDate(dateStr: string): string {
+  const d = new Date(dateStr + "T00:00:00");
+  d.setDate(d.getDate() - 1);
+  return d.toISOString().slice(0, 10);
+}
 
 export default function CalendarScreen() {
   const router = useRouter();
@@ -44,6 +54,7 @@ export default function CalendarScreen() {
   const [clothingMap, setClothingMap] = useState<Map<string, Clothing>>(
     new Map()
   );
+  const [showOptions, setShowOptions] = useState(false);
 
   const load = useCallback(async () => {
     const [logs, os, all] = await Promise.all([
@@ -108,11 +119,24 @@ export default function CalendarScreen() {
     return ids.map((id) => clothingMap.get(id)).filter(Boolean) as Clothing[];
   };
 
+  const getClothingItems = (log: DailyLog | undefined) => {
+    if (!log?.clothingIds) return [];
+    try {
+      const ids: string[] = JSON.parse(log.clothingIds);
+      return ids.map((id) => clothingMap.get(id)).filter(Boolean) as Clothing[];
+    } catch {
+      return [];
+    }
+  };
+
   const selectedLog = logMap.get(selected);
   const selectedOutfit = selectedLog?.outfitId
     ? outfitMap.get(selectedLog.outfitId)
     : undefined;
-  const selectedItems = getOutfitItems(selectedOutfit);
+  const selectedItems = selectedOutfit
+    ? getOutfitItems(selectedOutfit)
+    : getClothingItems(selectedLog);
+  const hasLogContent = selectedLog && (selectedOutfit || selectedItems.length > 0 || selectedLog.imageUri);
 
   const handleDeleteLog = () => {
     if (!selectedLog) return;
@@ -128,6 +152,102 @@ export default function CalendarScreen() {
       },
     ]);
   };
+
+  const handleCopyYesterday = async () => {
+    const prev = getPrevDate(selected);
+    const prevLog = await getDailyLogByDate(prev);
+    if (!prevLog) {
+      Alert.alert("提示", "昨天没有穿搭记录");
+      return;
+    }
+    try {
+      await addDailyLog({
+        date: selected,
+        outfitId: prevLog.outfitId,
+        clothingIds: prevLog.clothingIds,
+        notes: prevLog.notes ? `复制自 ${prev}：${prevLog.notes}` : undefined,
+        imageUri: prevLog.imageUri,
+      });
+      await load();
+      setShowOptions(false);
+    } catch (e) {
+      Alert.alert("复制失败", String(e));
+    }
+  };
+
+  const handlePickPhoto = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        allowsEditing: true,
+        quality: 0.85,
+        aspect: [3, 4],
+      });
+      if (!result.canceled) {
+        await addDailyLog({
+          date: selected,
+          imageUri: result.assets[0].uri,
+        });
+        await load();
+        setShowOptions(false);
+      }
+    } catch (e) {
+      Alert.alert("选择照片失败", String(e));
+    }
+  };
+
+  const LogOptions = ({ compact }: { compact?: boolean }) => (
+    <View style={[S.optionsGrid, compact && S.optionsGridCompact]}>
+      <Pressable
+        style={({ pressed }) => [S.optionCard, pressed && S.optionCardPressed]}
+        onPress={() => {
+          setShowOptions(false);
+          router.push({ pathname: "/calendar/log", params: { date: selected } });
+        }}
+      >
+        <View style={[S.optionIcon, { backgroundColor: "rgba(232,184,109,0.15)" }]}>
+          <Ionicons name="layers-outline" size={20} color={Colors.accent} />
+        </View>
+        <Text style={S.optionTitle}>从搭配库</Text>
+        <Text style={S.optionSub}>选择已有搭配</Text>
+      </Pressable>
+
+      <Pressable
+        style={({ pressed }) => [S.optionCard, pressed && S.optionCardPressed]}
+        onPress={() => {
+          setShowOptions(false);
+          router.push({ pathname: "/calendar/select-clothing", params: { date: selected } });
+        }}
+      >
+        <View style={[S.optionIcon, { backgroundColor: "rgba(143,200,212,0.15)" }]}>
+          <Ionicons name="shirt-outline" size={20} color={Colors.catBag} />
+        </View>
+        <Text style={S.optionTitle}>从物品库</Text>
+        <Text style={S.optionSub}>挑选单件衣物</Text>
+      </Pressable>
+
+      <Pressable
+        style={({ pressed }) => [S.optionCard, pressed && S.optionCardPressed]}
+        onPress={handlePickPhoto}
+      >
+        <View style={[S.optionIcon, { backgroundColor: "rgba(212,143,179,0.15)" }]}>
+          <Ionicons name="image-outline" size={20} color={Colors.catDress} />
+        </View>
+        <Text style={S.optionTitle}>从相册</Text>
+        <Text style={S.optionSub}>上传穿搭照片</Text>
+      </Pressable>
+
+      <Pressable
+        style={({ pressed }) => [S.optionCard, pressed && S.optionCardPressed]}
+        onPress={handleCopyYesterday}
+      >
+        <View style={[S.optionIcon, { backgroundColor: "rgba(143,212,168,0.15)" }]}>
+          <Ionicons name="copy-outline" size={20} color={Colors.catShoes} />
+        </View>
+        <Text style={S.optionTitle}>复制昨日</Text>
+        <Text style={S.optionSub}>沿用昨天穿搭</Text>
+      </Pressable>
+    </View>
+  );
 
   return (
     <ScrollView style={S.container} showsVerticalScrollIndicator={false}>
@@ -213,8 +333,8 @@ export default function CalendarScreen() {
             const outfit = log?.outfitId
               ? outfitMap.get(log.outfitId)
               : undefined;
-            const items = getOutfitItems(outfit);
-            const hasPhoto = items.length > 0;
+            const items = outfit ? getOutfitItems(outfit) : getClothingItems(log);
+            const hasContent = items.length > 0 || !!log?.imageUri;
 
             return (
               <Pressable
@@ -225,22 +345,29 @@ export default function CalendarScreen() {
                   isSel && S.daySel,
                   isToday && !isSel && S.dayToday,
                 ]}
-                onPress={() => setSelected(ds)}
+                onPress={() => {
+                  setSelected(ds);
+                  setShowOptions(false);
+                }}
               >
-                {hasPhoto ? (
+                {hasContent ? (
                   <View
                     style={[
                       S.dayPhoto,
                       isSel && S.dayPhotoSel,
                     ]}
                   >
-                    <OutfitPreview items={items} size={DAY_SIZE - 4} />
+                    {items.length > 0 ? (
+                      <OutfitPreview items={items} size={DAY_SIZE - 4} />
+                    ) : log?.imageUri ? (
+                      <AsyncImage uri={log.imageUri} style={{ width: DAY_SIZE - 4, height: DAY_SIZE - 4, borderRadius: Radius.sm }} />
+                    ) : null}
                   </View>
                 ) : null}
                 <View
                   style={[
                     S.dayLabel,
-                    hasPhoto && S.dayLabelOnPhoto,
+                    hasContent && S.dayLabelOnPhoto,
                   ]}
                 >
                   <Text
@@ -248,13 +375,13 @@ export default function CalendarScreen() {
                       S.dayText,
                       isSel && S.dayTextSel,
                       isToday && !isSel && S.dayTextToday,
-                      hasPhoto && S.dayTextOnPhoto,
+                      hasContent && S.dayTextOnPhoto,
                     ]}
                   >
                     {d}
                   </Text>
                 </View>
-                {isToday && !hasPhoto && (
+                {isToday && !hasContent && (
                   <View style={[S.dot, isSel && S.dotWhite]} />
                 )}
               </Pressable>
@@ -281,52 +408,60 @@ export default function CalendarScreen() {
         </View>
         <View style={S.divider} />
 
-        {selectedLog && selectedOutfit ? (
+        {hasLogContent && !showOptions ? (
           <View>
-            {/* Outfit Preview */}
-            <Pressable
-              style={S.outfitPreviewWrap}
-              onPress={() =>
-                router.push(`/outfits/${selectedOutfit.id}`)
-              }
-            >
-              <OutfitPreview items={selectedItems} size={280} />
-            </Pressable>
+            {/* Outfit Preview or Photo */}
+            {selectedLog?.imageUri ? (
+              <Pressable style={S.outfitPreviewWrap} onPress={() => {}}>
+                <AsyncImage uri={selectedLog.imageUri} style={{ width: 280, height: 280, borderRadius: Radius.lg }} />
+              </Pressable>
+            ) : selectedOutfit ? (
+              <Pressable
+                style={S.outfitPreviewWrap}
+                onPress={() =>
+                  router.push(`/outfits/${selectedOutfit.id}`)
+                }
+              >
+                <OutfitPreview items={selectedItems} size={280} />
+              </Pressable>
+            ) : null}
 
             <View style={S.outfitInfo}>
               <Text style={S.outfitName}>
-                {selectedOutfit.name || "未命名搭配"}
+                {selectedOutfit?.name || (selectedLog?.imageUri ? "穿搭照片" : "当日穿搭")}
               </Text>
               <Text style={S.outfitMeta}>
                 {selectedItems.length} 件衣物
               </Text>
-              {selectedLog.notes ? (
+              {selectedLog?.notes ? (
                 <Text style={S.outfitNote}>{selectedLog.notes}</Text>
               ) : null}
             </View>
 
             {/* Items */}
-            <View style={S.itemsRow}>
-              {selectedItems.map((item) => (
-                <Pressable
-                  key={item.id}
-                  style={({ pressed }) => [
-                    S.itemCard,
-                    pressed && S.pressed,
-                  ]}
-                  onPress={() =>
-                    router.push(`/closet/${item.id}`)
-                  }
-                >
-                  <View style={S.itemImageWrap}>
-                    <OutfitPreview items={[item]} size={64} />
-                  </View>
-                  <Text style={S.itemName} numberOfLines={1}>
-                    {item.name || "未命名"}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
+            {selectedItems.length > 0 && (
+              <View style={S.itemsRow}>
+                {selectedItems.map((item) => (
+                  <Pressable
+                    key={item.id}
+                    style={({ pressed }) => [
+                      S.itemCard,
+                      pressed && S.pressed,
+                    ]}
+                    onPress={() =>
+                      router.push(`/closet/${item.id}`)
+                    }
+                  >
+                    <View style={S.itemImageWrap}>
+                      <OutfitPreview items={[item]} size={64} />
+                    </View>
+                    <Text style={S.itemName} numberOfLines={1}>
+                      {item.name || "未命名"}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
 
             {/* Actions */}
             <View style={S.actionRow}>
@@ -336,19 +471,14 @@ export default function CalendarScreen() {
                   S.actionBtnPrimary,
                   pressed && S.pressed,
                 ]}
-                onPress={() =>
-                  router.push({
-                    pathname: "/calendar/log",
-                    params: { date: selected },
-                  })
-                }
+                onPress={() => setShowOptions(true)}
               >
                 <Ionicons
-                  name="create-outline"
+                  name="swap-horizontal-outline"
                   size={18}
                   color={Colors.textInverse}
                 />
-                <Text style={S.actionBtnPrimaryText}>修改</Text>
+                <Text style={S.actionBtnPrimaryText}>更换穿搭</Text>
               </Pressable>
               <Pressable
                 style={({ pressed }) => [
@@ -368,33 +498,33 @@ export default function CalendarScreen() {
             </View>
           </View>
         ) : (
-          <View style={S.emptyDay}>
-            <Ionicons
-              name="shirt-outline"
-              size={32}
-              color={Colors.textTertiary}
-            />
-            <Text style={S.emptyText}>暂无穿搭记录</Text>
-            <Text style={S.emptyHint}>选择日期记录当日穿搭</Text>
-            <Pressable
-              style={({ pressed }) => [
-                S.addBtn,
-                pressed && S.pressed,
-              ]}
-              onPress={() =>
-                router.push({
-                  pathname: "/calendar/log",
-                  params: { date: selected },
-                })
-              }
-            >
-              <Ionicons
-                name="add"
-                size={20}
-                color={Colors.textInverse}
-              />
-              <Text style={S.addBtnText}>记录穿搭</Text>
-            </Pressable>
+          <View>
+            {(selectedLog && showOptions) ? (
+              <View style={{ marginBottom: Spacing.lg }}>
+                <Text style={S.optionsTitle}>选择记录方式</Text>
+                <LogOptions compact />
+                <Pressable
+                  style={({ pressed }) => [
+                    S.cancelBtn,
+                    pressed && S.pressed,
+                  ]}
+                  onPress={() => setShowOptions(false)}
+                >
+                  <Text style={S.cancelBtnText}>取消</Text>
+                </Pressable>
+              </View>
+            ) : (
+              <View style={S.emptyDay}>
+                <Ionicons
+                  name="shirt-outline"
+                  size={32}
+                  color={Colors.textTertiary}
+                />
+                <Text style={S.emptyText}>暂无穿搭记录</Text>
+                <Text style={S.emptyHint}>选择一种方式记录当日穿搭</Text>
+                <LogOptions />
+              </View>
+            )}
           </View>
         )}
       </View>
@@ -612,19 +742,69 @@ const S = StyleSheet.create({
     marginTop: 4,
     marginBottom: Spacing.lg,
   },
-  addBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    backgroundColor: Colors.accent,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: Radius.lg,
-  },
-  addBtnText: {
-    color: Colors.textInverse,
-    fontWeight: "600",
+
+  optionsTitle: {
     fontSize: FontSize.base,
+    fontWeight: "600",
+    color: Colors.textSecondary,
+    textAlign: "center",
+    marginBottom: Spacing.lg,
+  },
+  optionsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: Spacing.md,
+    justifyContent: "center",
+  },
+  optionsGridCompact: {
+    gap: Spacing.sm,
+  },
+  optionCard: {
+    width: (SCREEN_W - Spacing.xl * 2 - Spacing.xl * 2 - Spacing.md) / 2,
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: Spacing.lg,
+    alignItems: "center",
+  },
+  optionCardPressed: {
+    backgroundColor: Colors.surfaceHighlight,
+    transform: [{ scale: 0.96 }],
+  },
+  optionIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: Spacing.sm,
+  },
+  optionTitle: {
+    fontSize: FontSize.base,
+    fontWeight: "600",
+    color: Colors.textPrimary,
+    marginBottom: 2,
+  },
+  optionSub: {
+    fontSize: FontSize.xs,
+    color: Colors.textTertiary,
+  },
+
+  cancelBtn: {
+    marginTop: Spacing.lg,
+    alignSelf: "center",
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: Radius.lg,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  cancelBtnText: {
+    fontSize: FontSize.base,
+    fontWeight: "500",
+    color: Colors.textSecondary,
   },
 
   outfitPreviewWrap: {
