@@ -1,10 +1,12 @@
 import { View, Text, Pressable, TextInput, StyleSheet, Alert, ScrollView } from "react-native";
 import { AsyncImage } from "../../src/components/AsyncImage";
+import { OutfitPreview } from "../../src/components/OutfitPreview";
 import { IconButton } from "../../src/components/ui/IconButton";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState, useEffect } from "react";
 import { useClothingStore } from "../../src/store/clothingStore";
 import { Ionicons } from "@expo/vector-icons";
+import { Outfit, Clothing } from "../../src/types";
 import { Colors, Spacing, Radius, FontSize, TouchMin, PressedOpacity } from "../../src/design/tokens";
 
 const COLORS = ["红","橙","黄","绿","蓝","紫","黑","白","灰","棕","粉","银","金"];
@@ -33,6 +35,8 @@ export default function ClothingDetail() {
   const [purchaseLink, setPurchaseLink] = useState("");
   const [tagsStr, setTagsStr] = useState("");
   const [notes, setNotes] = useState("");
+  const [relatedOutfits, setRelatedOutfits] = useState<Outfit[]>([]);
+  const [clothingMap, setClothingMap] = useState<Map<string, Clothing>>(new Map());
 
   useEffect(() => {
     if (!item) return;
@@ -40,6 +44,14 @@ export default function ClothingDetail() {
     setColor(item.color||""); setSeason(item.season||""); setLocation(item.location||"");
     setClothingSize(item.clothingSize||""); setShoeSize(item.shoeSize||""); setPrice(item.price||"");
     setPurchaseLink(item.purchaseLink||""); setTagsStr(item.tags||"[]"); setNotes(item.notes||"");
+    (async () => {
+      const outfits = await useClothingStore.getState().getRelatedOutfits(item.id);
+      setRelatedOutfits(outfits);
+      const all = useClothingStore.getState().items;
+      const map = new Map<string, Clothing>();
+      for (const c of all) map.set(c.id, c);
+      setClothingMap(map);
+    })();
   }, [item?.id]);
 
   if (!item) return <View style={S.centered}><Text style={{color:Colors.textTertiary}}>不存在</Text></View>;
@@ -51,6 +63,11 @@ export default function ClothingDetail() {
   const save = async () => {
     await updateItem(id!, { name, categoryId: catId, brand, color, season, location, clothingSize, shoeSize, price, purchaseLink, tags: tagsStr, notes });
     setEditing(false);
+  };
+
+  const getOutfitItems = (o: Outfit) => {
+    const ids: string[] = JSON.parse(o.clothingIds || "[]");
+    return ids.map((id) => clothingMap.get(id)).filter(Boolean) as Clothing[];
   };
 
   const seasonToggle = (s: string) => {
@@ -164,6 +181,32 @@ export default function ClothingDetail() {
           {!editing && <Field label="备注" value={notes} />}
         </View>
 
+        {/* Related Outfits */}
+        {!editing && relatedOutfits.length > 0 && (
+          <View style={{ marginTop: Spacing.xxl }}>
+            <Text style={S.section}>相关搭配 ({relatedOutfits.length})</Text>
+            <View style={{ gap: Spacing.md }}>
+              {relatedOutfits.map((o) => {
+                const items = getOutfitItems(o);
+                return (
+                  <Pressable
+                    key={o.id}
+                    style={({ pressed }) => [S.outfitCard, pressed && S.pressed]}
+                    onPress={() => router.push(`/outfits/${o.id}`)}
+                  >
+                    <OutfitPreview items={items} size={80} />
+                    <View style={{ marginLeft: Spacing.lg, flex: 1 }}>
+                      <Text style={S.outfitName}>{o.name || "未命名搭配"}</Text>
+                      <Text style={S.outfitMeta}>{items.length} 件衣物</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={18} color={Colors.textTertiary} />
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+        )}
+
         {/* Delete */}
         <Pressable style={({pressed})=>[S.deleteBtn, pressed&&S.pressed]} onPress={() => {
           Alert.alert("删除", "确定删除？", [{ text: "取消", style: "cancel" }, { text: "删除", style: "destructive", onPress: async () => { await deleteItem(id!); router.back(); } }]);
@@ -265,6 +308,19 @@ const S = StyleSheet.create({
   chipActive: { backgroundColor: Colors.accent, borderColor: Colors.accent },
   chipText: { fontSize: FontSize.sm, color: Colors.textSecondary },
   chipActiveText: { color: Colors.textInverse, fontWeight: "600" },
+
+  section: { fontSize: FontSize.lg, fontWeight: "700", color: Colors.textPrimary, marginBottom: Spacing.md },
+  outfitCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: Colors.surfaceElevated,
+    borderRadius: Radius.lg,
+    padding: Spacing.lg,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  outfitName: { fontSize: FontSize.base, fontWeight: "600", color: Colors.textPrimary },
+  outfitMeta: { fontSize: FontSize.sm, color: Colors.textTertiary, marginTop: 4 },
 
   deleteBtn: {
     flexDirection: "row",

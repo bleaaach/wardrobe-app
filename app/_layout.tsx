@@ -33,6 +33,8 @@ export default function RootLayout() {
         <Stack.Screen name="closet/[id]" options={{ presentation: "modal" }} />
         <Stack.Screen name="outfits/create" options={{ presentation: "modal" }} />
         <Stack.Screen name="outfits/[id]" options={{ presentation: "modal" }} />
+        <Stack.Screen name="settings/categories" options={{ presentation: "modal" }} />
+        <Stack.Screen name="settings/archive" options={{ presentation: "modal" }} />
       </Stack>
     </>
   );

@@ -1,5 +1,6 @@
 import { View, Text, ScrollView, Pressable, TextInput, StyleSheet, Alert, Platform } from "react-native";
 import { useEffect, useState, useRef } from "react";
+import { useRouter } from "expo-router";
 import * as FileSystem from "expo-file-system";
 import * as Sharing from "expo-sharing";
 import { Ionicons } from "@expo/vector-icons";
@@ -9,6 +10,7 @@ import { importClosetData } from "../../src/services/importCloset";
 import { Colors, Spacing, Radius, FontSize, TouchMin, PressedOpacity } from "../../src/design/tokens";
 
 export default function SettingsScreen() {
+  const router = useRouter();
   const [syncUrl, setSyncUrl] = useState("http://8.162.26.192/sync");
   const [token, setToken] = useState("");
   const [importing, setImporting] = useState(false);
@@ -124,6 +126,15 @@ export default function SettingsScreen() {
             <Text style={S.inputLabel}>Token</Text>
             <TextInput style={S.input} value={token} onChangeText={setToken} onBlur={() => setSetting("token", token)} secureTextEntry placeholder="登录后获取" placeholderTextColor={Colors.textTertiary} />
           </View>
+        </View>
+      </View>
+
+      {/* Management Section */}
+      <View style={S.section}>
+        <Text style={S.sectionLabel}>管理</Text>
+        <View style={S.card}>
+          <Row icon="folder-open-outline" title="分类管理" onPress={() => router.push("/settings/categories")} />
+          <Row icon="archive-outline" title="回收站" onPress={() => router.push("/settings/archive")} />
         </View>
       </View>
 

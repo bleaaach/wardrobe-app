@@ -39,22 +39,33 @@ export async function initDatabase(): Promise<void> {
     id: `cat_${c.name}`,
     sortOrder: i + 1,
   }));
+  let changed = false;
   // Force full reset if old version (only 7 categories from v1)
   if (cats.length <= 7) {
-    cats = defaults;
+    cats = [...defaults];
+    changed = true;
   } else {
     for (const dc of defaults) {
-      if (!cats.find((c) => c.id === dc.id)) cats.push(dc);
+      if (!cats.find((c) => c.id === dc.id)) {
+        cats.push(dc);
+        changed = true;
+      }
     }
   }
-  if (cats.length !== defaults.length || cats.length === 0) {
+  if (changed || cats.length === 0) {
     await setJson(STORAGE_KEYS.categories, cats);
   }
 }
 
 // ====== 衣物 ======
 export async function getAllClothing(): Promise<Clothing[]> {
-  return getJson<Clothing[]>(STORAGE_KEYS.clothing, []);
+  const items = await getJson<Clothing[]>(STORAGE_KEYS.clothing, []);
+  return items.filter((i) => !i.deleted);
+}
+
+export async function getArchivedClothing(): Promise<Clothing[]> {
+  const items = await getJson<Clothing[]>(STORAGE_KEYS.clothing, []);
+  return items.filter((i) => i.deleted === 1);
 }
 
 export async function getClothingByCategory(categoryId: string): Promise<Clothing[]> {
@@ -63,12 +74,12 @@ export async function getClothingByCategory(categoryId: string): Promise<Clothin
 }
 
 export async function getClothingById(id: string): Promise<Clothing | null> {
-  const items = await getAllClothing();
+  const items = await getJson<Clothing[]>(STORAGE_KEYS.clothing, []);
   return items.find((i) => i.id === id) || null;
 }
 
 export async function addClothing(data: Omit<Clothing, "id" | "createdAt" | "updatedAt" | "deleted" | "favorite"> & {favorite?: number}): Promise<Clothing> {
-  const items = await getAllClothing();
+  const items = await getJson<Clothing[]>(STORAGE_KEYS.clothing, []);
   const id = Date.now().toString(36) + Math.random().toString(36).slice(2);
   const now = new Date().toISOString();
   const defaults = { brand:"", color:"", season:"", location:"", clothingSize:"", shoeSize:"", price:"", purchaseLink:"", tags:"[]", wearCount:0, notes:"" };
@@ -79,7 +90,7 @@ export async function addClothing(data: Omit<Clothing, "id" | "createdAt" | "upd
 }
 
 export async function updateClothing(id: string, data: Partial<Clothing>): Promise<void> {
-  const items = await getAllClothing();
+  const items = await getJson<Clothing[]>(STORAGE_KEYS.clothing, []);
   const idx = items.findIndex((i) => i.id === id);
   if (idx >= 0) {
     items[idx] = { ...items[idx], ...data, updatedAt: new Date().toISOString() };
@@ -88,8 +99,11 @@ export async function updateClothing(id: string, data: Partial<Clothing>): Promi
 }
 
 export async function deleteClothing(id: string): Promise<void> {
-  const items = await getAllClothing();
-  await setJson(STORAGE_KEYS.clothing, items.filter((i) => i.id !== id));
+  await updateClothing(id, { deleted: 1 });
+}
+
+export async function restoreClothing(id: string): Promise<void> {
+  await updateClothing(id, { deleted: 0 });
 }
 
 // ====== 分类 ======
@@ -98,9 +112,44 @@ export async function getCategories(): Promise<Category[]> {
   return getJson<Category[]>(STORAGE_KEYS.categories, []);
 }
 
+export async function addCategory(data: Omit<Category, "id">): Promise<Category> {
+  const cats = await getCategories();
+  const id = `cat_${Date.now().toString(36)}`;
+  const item: Category = { ...data, id };
+  cats.push(item);
+  await setJson(STORAGE_KEYS.categories, cats);
+  return item;
+}
+
+export async function updateCategory(id: string, data: Partial<Category>): Promise<void> {
+  const cats = await getCategories();
+  const idx = cats.findIndex((c) => c.id === id);
+  if (idx >= 0) {
+    cats[idx] = { ...cats[idx], ...data };
+    await setJson(STORAGE_KEYS.categories, cats);
+  }
+}
+
+export async function deleteCategory(id: string): Promise<void> {
+  const cats = await getCategories();
+  await setJson(STORAGE_KEYS.categories, cats.filter((c) => c.id !== id));
+}
+
 // ====== 搭配 ======
 export async function getOutfits(): Promise<Outfit[]> {
   return getJson<Outfit[]>(STORAGE_KEYS.outfits, []);
+}
+
+export async function getOutfitsByClothingId(clothingId: string): Promise<Outfit[]> {
+  const outfits = await getOutfits();
+  return outfits.filter((o) => {
+    try {
+      const ids: string[] = JSON.parse(o.clothingIds || "[]");
+      return ids.includes(clothingId);
+    } catch {
+      return false;
+    }
+  });
 }
 
 export async function addOutfit(data: Omit<Outfit, "id" | "createdAt" | "updatedAt" | "deleted">): Promise<Outfit> {
