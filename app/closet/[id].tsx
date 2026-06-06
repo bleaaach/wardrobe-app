@@ -144,14 +144,26 @@ export default function ClothingDetail() {
         )}
 
         {/* Category (edit) */}
-        {editing && <><Text style={S.fieldLabel}>分类</Text><View style={S.chips}>{categories.map((c)=>{
-          const isActive = catId === c.id;
-          return (
-            <Pressable key={c.id} style={[S.chip, isActive&&S.chipActive]} onPress={()=>setCatId(c.id)}>
-              <Text style={[S.chipText, isActive&&S.chipActiveText]}>{c.icon} {c.name}</Text>
-            </Pressable>
-          );
-        })}</View></>}
+        {editing && (
+          <>
+            <Text style={S.fieldLabel}>分类</Text>
+            {categories.filter((c) => !c.parentId).sort((a, b) => a.sortOrder - b.sortOrder).map((p) => (
+              <View key={p.id} style={{ marginBottom: Spacing.md }}>
+                <Text style={S.parentLabel}>{p.name}</Text>
+                <View style={S.chips}>
+                  {categories.filter((c) => c.parentId === p.id).sort((a, b) => a.sortOrder - b.sortOrder).map((c) => {
+                    const isActive = catId === c.id;
+                    return (
+                      <Pressable key={c.id} style={[S.chip, isActive && S.chipActive]} onPress={() => setCatId(c.id)}>
+                        <Text style={[S.chipText, isActive && S.chipActiveText]}>{c.name}</Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+            ))}
+          </>
+        )}
 
         {/* Info Card */}
         <View style={S.infoCard}>
@@ -282,6 +294,7 @@ const S = StyleSheet.create({
   },
   fieldWrap: { marginTop: Spacing.lg },
   fieldLabel: { fontSize: FontSize.sm, fontWeight: "600", color: Colors.textSecondary, marginBottom: Spacing.sm },
+  parentLabel: { fontSize: FontSize.xs, fontWeight: "700", color: Colors.textTertiary, marginBottom: Spacing.sm, textTransform: "uppercase", letterSpacing: 0.5 },
   value: { fontSize: FontSize.base, color: Colors.textPrimary },
 
   input: {

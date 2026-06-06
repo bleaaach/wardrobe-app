@@ -34,14 +34,14 @@ async function setJson<T>(key: string, value: T): Promise<void> {
 // ====== 初始化 ======
 export async function initDatabase(): Promise<void> {
   let cats = await getJson<Category[]>(STORAGE_KEYS.categories, []);
-  const defaults: Category[] = DEFAULT_CATEGORIES.map((c, i) => ({
+  // Force reset if old flat structure (no parentId field or old ids)
+  const isOldFormat = cats.length > 0 && !cats[0]?.hasOwnProperty("parentId");
+  const defaults: Category[] = DEFAULT_CATEGORIES.map((c) => ({
     ...c,
-    id: `cat_${c.name}`,
-    sortOrder: i + 1,
+    id: c.parentId ? `sub_${c.name}` : `parent_${c.name}`,
   }));
   let changed = false;
-  // Force full reset if old version (only 7 categories from v1)
-  if (cats.length <= 7) {
+  if (cats.length === 0 || isOldFormat) {
     cats = [...defaults];
     changed = true;
   } else {
@@ -52,7 +52,7 @@ export async function initDatabase(): Promise<void> {
       }
     }
   }
-  if (changed || cats.length === 0) {
+  if (changed) {
     await setJson(STORAGE_KEYS.categories, cats);
   }
 }

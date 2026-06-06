@@ -4,48 +4,74 @@ export interface Category {
   name: string;
   icon: string;
   sortOrder: number;
+  parentId?: string | null;
 }
 
-export const DEFAULT_CATEGORIES: Omit<Category, "id">[] = [
-  // 上衣
-  { name: "T恤", icon: "👕", sortOrder: 1 },
-  { name: "衬衫", icon: "👔", sortOrder: 2 },
-  { name: "卫衣", icon: "🏃", sortOrder: 3 },
-  { name: "毛衣", icon: "🧶", sortOrder: 4 },
-  { name: "开衫", icon: "🧥", sortOrder: 5 },
-  { name: "背心", icon: "🎽", sortOrder: 6 },
-  { name: "马甲", icon: "🦺", sortOrder: 7 },
-  // 裤子
-  { name: "牛仔裤", icon: "👖", sortOrder: 10 },
-  { name: "休闲裤", icon: "👖", sortOrder: 11 },
-  { name: "短裤", icon: "🩳", sortOrder: 12 },
-  { name: "运动裤", icon: "🦿", sortOrder: 13 },
-  // 裙子
-  { name: "连衣裙", icon: "👗", sortOrder: 20 },
-  { name: "半身裙", icon: "👗", sortOrder: 21 },
-  // 外套
-  { name: "羽绒服", icon: "🧥", sortOrder: 30 },
-  { name: "大衣", icon: "🧥", sortOrder: 31 },
-  { name: "风衣", icon: "🧥", sortOrder: 32 },
-  { name: "夹克", icon: "🧥", sortOrder: 33 },
-  { name: "西装", icon: "🤵", sortOrder: 34 },
-  // 鞋子
-  { name: "运动鞋", icon: "👟", sortOrder: 40 },
-  { name: "靴子", icon: "🥾", sortOrder: 41 },
-  { name: "板鞋", icon: "👟", sortOrder: 42 },
-  { name: "凉鞋", icon: "👡", sortOrder: 43 },
-  // 配饰
-  { name: "帽子", icon: "🧢", sortOrder: 50 },
-  { name: "围巾", icon: "🧣", sortOrder: 51 },
-  { name: "手套", icon: "🧤", sortOrder: 52 },
-  { name: "袜子", icon: "🧦", sortOrder: 53 },
-  { name: "眼镜", icon: "👓", sortOrder: 54 },
-  { name: "皮带", icon: "🪢", sortOrder: 55 },
-  // 包包
-  { name: "双肩包", icon: "🎒", sortOrder: 60 },
-  { name: "单肩包", icon: "👜", sortOrder: 61 },
-  { name: "手提包", icon: "👜", sortOrder: 62 },
+export const DEFAULT_PARENT_CATEGORIES: Omit<Category, "id">[] = [
+  { name: "上装", icon: "", sortOrder: 1, parentId: null },
+  { name: "下装", icon: "", sortOrder: 2, parentId: null },
+  { name: "连体服装", icon: "", sortOrder: 3, parentId: null },
+  { name: "外套", icon: "", sortOrder: 4, parentId: null },
+  { name: "鞋子", icon: "", sortOrder: 5, parentId: null },
+  { name: "包袋", icon: "", sortOrder: 6, parentId: null },
+  { name: "配饰", icon: "", sortOrder: 7, parentId: null },
 ];
+
+export const DEFAULT_SUB_CATEGORIES: Omit<Category, "id">[] = [
+  // 上装
+  { name: "T恤", icon: "", sortOrder: 1, parentId: "parent_上装" },
+  { name: "polo衫", icon: "", sortOrder: 2, parentId: "parent_上装" },
+  { name: "衬衫", icon: "", sortOrder: 3, parentId: "parent_上装" },
+  { name: "女衬衫", icon: "", sortOrder: 4, parentId: "parent_上装" },
+  { name: "马甲", icon: "", sortOrder: 5, parentId: "parent_上装" },
+  { name: "毛衣", icon: "", sortOrder: 6, parentId: "parent_上装" },
+  { name: "背心", icon: "", sortOrder: 7, parentId: "parent_上装" },
+  { name: "文胸", icon: "", sortOrder: 8, parentId: "parent_上装" },
+  { name: "卫衣", icon: "", sortOrder: 9, parentId: "parent_上装" },
+  // 下装
+  { name: "长裤", icon: "", sortOrder: 1, parentId: "parent_下装" },
+  { name: "裙子", icon: "", sortOrder: 2, parentId: "parent_下装" },
+  { name: "牛仔裤", icon: "", sortOrder: 3, parentId: "parent_下装" },
+  { name: "短裤", icon: "", sortOrder: 4, parentId: "parent_下装" },
+  { name: "紧身裤", icon: "", sortOrder: 5, parentId: "parent_下装" },
+  // 连体服装
+  { name: "连衣裙", icon: "", sortOrder: 1, parentId: "parent_连体服装" },
+  { name: "连身裤", icon: "", sortOrder: 2, parentId: "parent_连体服装" },
+  // 外套
+  { name: "大衣", icon: "", sortOrder: 1, parentId: "parent_外套" },
+  { name: "夹克", icon: "", sortOrder: 2, parentId: "parent_外套" },
+  { name: "西装外套", icon: "", sortOrder: 3, parentId: "parent_外套" },
+  { name: "连帽衫", icon: "", sortOrder: 4, parentId: "parent_外套" },
+  { name: "羽绒服", icon: "", sortOrder: 5, parentId: "parent_外套" },
+  { name: "开衫", icon: "", sortOrder: 6, parentId: "parent_外套" },
+  { name: "其他", icon: "", sortOrder: 7, parentId: "parent_外套" },
+  // 鞋子
+  { name: "靴子", icon: "", sortOrder: 1, parentId: "parent_鞋子" },
+  { name: "平底鞋", icon: "", sortOrder: 2, parentId: "parent_鞋子" },
+  { name: "高跟鞋", icon: "", sortOrder: 3, parentId: "parent_鞋子" },
+  { name: "凉鞋", icon: "", sortOrder: 4, parentId: "parent_鞋子" },
+  { name: "拖鞋", icon: "", sortOrder: 5, parentId: "parent_鞋子" },
+  { name: "运动鞋", icon: "", sortOrder: 6, parentId: "parent_鞋子" },
+  // 包袋
+  { name: "单肩包", icon: "", sortOrder: 1, parentId: "parent_包袋" },
+  { name: "手拿包", icon: "", sortOrder: 2, parentId: "parent_包袋" },
+  { name: "腰包", icon: "", sortOrder: 3, parentId: "parent_包袋" },
+  { name: "手提包", icon: "", sortOrder: 4, parentId: "parent_包袋" },
+  { name: "背包", icon: "", sortOrder: 5, parentId: "parent_包袋" },
+  { name: "公文包", icon: "", sortOrder: 6, parentId: "parent_包袋" },
+  // 配饰
+  { name: "帽子", icon: "", sortOrder: 1, parentId: "parent_配饰" },
+  { name: "手镯", icon: "", sortOrder: 2, parentId: "parent_配饰" },
+  { name: "戒指", icon: "", sortOrder: 3, parentId: "parent_配饰" },
+  { name: "胸针", icon: "", sortOrder: 4, parentId: "parent_配饰" },
+  { name: "墨镜", icon: "", sortOrder: 5, parentId: "parent_配饰" },
+  { name: "腰带", icon: "", sortOrder: 6, parentId: "parent_配饰" },
+  { name: "手表", icon: "", sortOrder: 7, parentId: "parent_配饰" },
+  { name: "手套", icon: "", sortOrder: 8, parentId: "parent_配饰" },
+  { name: "耳环", icon: "", sortOrder: 9, parentId: "parent_配饰" },
+];
+
+export const DEFAULT_CATEGORIES = [...DEFAULT_PARENT_CATEGORIES, ...DEFAULT_SUB_CATEGORIES];
 
 // ============ 衣物 ============
 export interface Clothing {

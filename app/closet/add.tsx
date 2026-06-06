@@ -117,13 +117,24 @@ export default function AddClothingScreen() {
           <TextInput style={S.input} value={name} onChangeText={setName} placeholder="名称（选填）" placeholderTextColor={Colors.textTertiary} />
 
           <Text style={S.label}>分类</Text>
-          <View style={S.chips}>
-            {categories.map((cat) => (
-              <Pressable key={cat.id} style={[S.chip, catId === cat.id && S.chipActive]} onPress={() => setCatId(cat.id)}>
-                <Text style={[S.chipText, catId === cat.id && S.chipActiveText]}>{cat.icon} {cat.name}</Text>
-              </Pressable>
-            ))}
-          </View>
+          {(() => {
+            const parents = categories.filter((c) => !c.parentId).sort((a, b) => a.sortOrder - b.sortOrder);
+            return parents.map((p) => (
+              <View key={p.id} style={{ marginBottom: Spacing.md }}>
+                <Text style={S.parentLabel}>{p.name}</Text>
+                <View style={S.chips}>
+                  {categories
+                    .filter((c) => c.parentId === p.id)
+                    .sort((a, b) => a.sortOrder - b.sortOrder)
+                    .map((cat) => (
+                      <Pressable key={cat.id} style={[S.chip, catId === cat.id && S.chipActive]} onPress={() => setCatId(cat.id)}>
+                        <Text style={[S.chipText, catId === cat.id && S.chipActiveText]}>{cat.name}</Text>
+                      </Pressable>
+                    ))}
+                </View>
+              </View>
+            ));
+          })()}
 
           <Text style={S.label}>季节</Text>
           <View style={S.chips}>
@@ -192,6 +203,7 @@ const S = StyleSheet.create({
     color: Colors.textPrimary,
   },
   label: { fontSize: FontSize.sm, fontWeight: "600", color: Colors.textSecondary, marginBottom: Spacing.sm, marginTop: Spacing.lg },
+  parentLabel: { fontSize: FontSize.xs, fontWeight: "700", color: Colors.textTertiary, marginBottom: Spacing.sm, textTransform: "uppercase", letterSpacing: 0.5 },
 
   chips: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.sm },
   chip: {

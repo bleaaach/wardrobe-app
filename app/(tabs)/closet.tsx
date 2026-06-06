@@ -3,9 +3,9 @@ import { AsyncImage } from "../../src/components/AsyncImage";
 import { EmptyState } from "../../src/components/ui/EmptyState";
 import { useRouter } from "expo-router";
 import { useClothingStore } from "../../src/store/clothingStore";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { Clothing } from "../../src/types";
+import { Clothing, Category } from "../../src/types";
 import { Colors, Spacing, Radius, FontSize, TouchMin, PressedOpacity, Shadows } from "../../src/design/tokens";
 
 export default function ClosetScreen() {
@@ -20,36 +20,58 @@ export default function ClosetScreen() {
   const filtered = selectedCat ? items.filter((i) => i.categoryId === selectedCat) : items;
   const catName = (id: string) => categories.find((c) => c.id === id)?.name || "";
 
+  const { parents, subsByParent } = useMemo(() => {
+    const parents = categories.filter((c) => !c.parentId).sort((a, b) => a.sortOrder - b.sortOrder);
+    const subsByParent = new Map<string, Category[]>();
+    for (const p of parents) {
+      subsByParent.set(
+        p.id,
+        categories.filter((c) => c.parentId === p.id).sort((a, b) => a.sortOrder - b.sortOrder)
+      );
+    }
+    return { parents, subsByParent };
+  }, [categories]);
+
   return (
     <View style={S.container}>
       {/* Magazine Header */}
       <View style={S.header}>
         <Text style={S.headerTitle}>Closet</Text>
-        <Text style={S.headerSub}>{items.length} 件衣物 · {categories.length} 个分类</Text>
+        <Text style={S.headerSub}>{items.length} 件衣物 · {categories.filter((c) => c.parentId).length} 个分类</Text>
       </View>
 
-      {/* Category Stories */}
+      {/* Category Groups - Horizontal scroll with parent pills and sub text */}
       <FlatList
         horizontal
-        data={[{ id: null as any, name: "全部", icon: "✦" }, ...categories]}
+        data={[{ id: "all", name: "全部", isParent: true }, ...parents.flatMap((p) => [
+          { id: p.id, name: p.name, isParent: true } as any,
+          ...(subsByParent.get(p.id) || []).map((s) => ({ id: s.id, name: s.name, isParent: false, parentName: p.name })),
+        ])]}
         showsHorizontalScrollIndicator={false}
         style={S.catList}
-        contentContainerStyle={{ paddingHorizontal: Spacing.xl, gap: Spacing.md }}
+        contentContainerStyle={{ paddingHorizontal: Spacing.xl, gap: Spacing.sm, alignItems: "center" }}
         renderItem={({ item }) => {
-          const active = selectedCat === item.id;
+          const active = selectedCat === item.id || (item.id === "all" && selectedCat === null);
+          if (item.isParent) {
+            return (
+              <Pressable
+                style={[S.parentPill, active && S.parentPillActive]}
+                onPress={() => setSelectedCat(item.id === "all" ? null : item.id)}
+              >
+                <Text style={[S.parentText, active && S.parentTextActive]}>{item.name}</Text>
+              </Pressable>
+            );
+          }
           return (
             <Pressable
-              style={[S.catCard, active && S.catCardActive]}
+              style={[S.subPill, active && S.subPillActive]}
               onPress={() => setSelectedCat(active ? null : item.id)}
             >
-              <View style={[S.catRing, active && S.catRingActive]}>
-                <Text style={S.catIcon}>{item.icon}</Text>
-              </View>
-              <Text style={[S.catName, active && S.catNameActive]}>{item.name}</Text>
+              <Text style={[S.subText, active && S.subTextActive]}>{item.name}</Text>
             </Pressable>
           );
         }}
-        keyExtractor={(item) => item.id || "all"}
+        keyExtractor={(item) => item.id}
       />
 
       {/* Large Image Grid */}
@@ -95,28 +117,41 @@ const S = StyleSheet.create({
   headerTitle: { fontSize: 42, fontWeight: "800", color: Colors.textPrimary, letterSpacing: -1.5, lineHeight: 48 },
   headerSub: { fontSize: FontSize.base, color: Colors.textTertiary, marginTop: Spacing.xs },
 
-  // Category Stories (Instagram style with ring)
-  catList: { maxHeight: 110, marginBottom: Spacing.md },
-  catCard: { alignItems: "center", gap: 6 },
-  catCardActive: {},
-  catRing: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+  // Category text-only pills
+  catList: { maxHeight: 60, marginBottom: Spacing.md },
+  parentPill: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: Radius.full,
     backgroundColor: Colors.surface,
     borderWidth: 1,
     borderColor: Colors.border,
+    minHeight: TouchMin,
     justifyContent: "center",
-    alignItems: "center",
   },
-  catRingActive: {
-    borderWidth: 2,
+  parentPillActive: {
+    backgroundColor: Colors.accent,
     borderColor: Colors.accent,
-    backgroundColor: Colors.accentLight,
   },
-  catIcon: { fontSize: 28 },
-  catName: { fontSize: FontSize.xs, color: Colors.textSecondary, fontWeight: "500" },
-  catNameActive: { color: Colors.accent, fontWeight: "600" },
+  parentText: { fontSize: FontSize.sm, fontWeight: "600", color: Colors.textSecondary },
+  parentTextActive: { color: Colors.textInverse },
+
+  subPill: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: Radius.full,
+    backgroundColor: Colors.surfaceElevated,
+    borderWidth: 1,
+    borderColor: "transparent",
+    minHeight: TouchMin,
+    justifyContent: "center",
+  },
+  subPillActive: {
+    backgroundColor: Colors.accentLight,
+    borderColor: Colors.accent,
+  },
+  subText: { fontSize: FontSize.sm, color: Colors.textSecondary },
+  subTextActive: { color: Colors.accent, fontWeight: "600" },
 
   // Grid
   grid: { paddingHorizontal: Spacing.md, paddingBottom: 120 },

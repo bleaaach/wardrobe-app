@@ -1,6 +1,6 @@
 import { View, Text, FlatList, Pressable, TextInput, StyleSheet, Alert } from "react-native";
 import { useRouter } from "expo-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useClothingStore } from "../../src/store/clothingStore";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors, Spacing, Radius, FontSize, TouchMin, PressedOpacity } from "../../src/design/tokens";
@@ -16,25 +16,39 @@ export default function CategoriesScreen() {
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
-  const [editIcon, setEditIcon] = useState("");
+  const [editParent, setEditParent] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState("");
-  const [newIcon, setNewIcon] = useState("👕");
+  const [newParent, setNewParent] = useState<string | null>(null);
 
   useEffect(() => { loadCategories(); }, []);
+
+  const { parents, subsByParent } = useMemo(() => {
+    const parents = categories.filter((c) => !c.parentId).sort((a, b) => a.sortOrder - b.sortOrder);
+    const subsByParent = new Map<string, typeof categories>();
+    for (const p of parents) {
+      subsByParent.set(p.id, categories.filter((c) => c.parentId === p.id).sort((a, b) => a.sortOrder - b.sortOrder));
+    }
+    return { parents, subsByParent };
+  }, [categories]);
 
   const startEdit = (cat: typeof categories[0]) => {
     setEditingId(cat.id);
     setEditName(cat.name);
-    setEditIcon(cat.icon);
+    setEditParent(cat.parentId || null);
   };
 
   const saveEdit = async (id: string) => {
-    await updateCat(id, { name: editName, icon: editIcon });
+    await updateCat(id, { name: editName, parentId: editParent });
     setEditingId(null);
   };
 
   const handleDelete = (id: string, name: string) => {
+    const hasChildren = categories.some((c) => c.parentId === id);
+    if (hasChildren) {
+      Alert.alert("无法删除", "该分类下还有子分类，请先删除子分类。");
+      return;
+    }
     const count = items.filter((i) => i.categoryId === id).length;
     const msg = count > 0
       ? `该分类下有 ${count} 件衣物，删除后这些衣物将变为"未分类"状态。确定删除吗？`
@@ -44,6 +58,51 @@ export default function CategoriesScreen() {
       { text: "删除", style: "destructive", onPress: async () => { await deleteCat(id); } },
     ]);
   };
+
+  const renderCat = (cat: typeof categories[0], level: number) => {
+    const isEditing = editingId === cat.id;
+    const count = items.filter((i) => i.categoryId === cat.id).length;
+    const childrenCount = categories.filter((c) => c.parentId === cat.id).length;
+    return (
+      <View key={cat.id} style={[S.card, level === 1 && { marginLeft: Spacing.xl }]}>
+        {isEditing ? (
+          <View style={S.editRow}>
+            <TextInput style={[S.input, { flex: 1 }]} value={editName} onChangeText={setEditName} />
+            {!cat.parentId && (
+              <Pressable style={[S.badge, editParent === null && S.badgeActive]} onPress={() => setEditParent(null)}>
+                <Text style={S.badgeText}>一级</Text>
+              </Pressable>
+            )}
+            {cat.parentId && parents.map((p) => (
+              <Pressable key={p.id} style={[S.badge, editParent === p.id && S.badgeActive]} onPress={() => setEditParent(p.id)}>
+                <Text style={S.badgeText}>{p.name}</Text>
+              </Pressable>
+            ))}
+            <Pressable onPress={() => saveEdit(cat.id)} style={S.editAction}>
+              <Ionicons name="checkmark" size={22} color={Colors.accent} />
+            </Pressable>
+          </View>
+        ) : (
+          <View style={S.row}>
+            <View style={{ flex: 1 }}>
+              <Text style={[S.name, level === 0 && { fontWeight: "800", fontSize: FontSize.md }]}>{cat.name}</Text>
+              <Text style={S.count}>
+                {cat.parentId ? `${count} 件衣物` : `${childrenCount} 个子分类`}
+              </Text>
+            </View>
+            <Pressable onPress={() => startEdit(cat)} style={S.actionBtn}>
+              <Ionicons name="create-outline" size={18} color={Colors.textSecondary} />
+            </Pressable>
+            <Pressable onPress={() => handleDelete(cat.id, cat.name)} style={S.actionBtn}>
+              <Ionicons name="trash-outline" size={18} color={Colors.danger} />
+            </Pressable>
+          </View>
+        )}
+      </View>
+    );
+  };
+
+  const allCats = parents.flatMap((p) => [p, ...(subsByParent.get(p.id) || [])]);
 
   return (
     <View style={S.container}>
@@ -56,62 +115,42 @@ export default function CategoriesScreen() {
       </View>
 
       <FlatList
-        data={categories}
+        data={allCats}
         contentContainerStyle={S.list}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => {
-          const isEditing = editingId === item.id;
-          const count = items.filter((i) => i.categoryId === item.id).length;
-          return (
-            <View style={S.card}>
-              {isEditing ? (
-                <View style={S.editRow}>
-                  <TextInput style={[S.input, { width: 50 }]} value={editIcon} onChangeText={setEditIcon} />
-                  <TextInput style={[S.input, { flex: 1 }]} value={editName} onChangeText={setEditName} />
-                  <Pressable onPress={() => saveEdit(item.id)} style={S.editAction}>
-                    <Ionicons name="checkmark" size={22} color={Colors.accent} />
-                  </Pressable>
-                </View>
-              ) : (
-                <View style={S.row}>
-                  <View style={S.iconWrap}>
-                    <Text style={S.icon}>{item.icon}</Text>
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={S.name}>{item.name}</Text>
-                    <Text style={S.count}>{count} 件衣物</Text>
-                  </View>
-                  <Pressable onPress={() => startEdit(item)} style={S.actionBtn}>
-                    <Ionicons name="create-outline" size={18} color={Colors.textSecondary} />
-                  </Pressable>
-                  <Pressable onPress={() => handleDelete(item.id, item.name)} style={S.actionBtn}>
-                    <Ionicons name="trash-outline" size={18} color={Colors.danger} />
-                  </Pressable>
-                </View>
-              )}
-            </View>
-          );
-        }}
+        renderItem={({ item }) => renderCat(item, item.parentId ? 1 : 0)}
       />
 
       {/* Add New */}
       {adding ? (
         <View style={S.addCard}>
-          <View style={S.editRow}>
-            <TextInput style={[S.input, { width: 50 }]} value={newIcon} onChangeText={setNewIcon} />
-            <TextInput style={[S.input, { flex: 1 }]} value={newName} onChangeText={setNewName} placeholder="新分类名称" placeholderTextColor={Colors.textTertiary} />
+          <TextInput style={S.input} value={newName} onChangeText={setNewName} placeholder="新分类名称" placeholderTextColor={Colors.textTertiary} />
+          <Text style={{ fontSize: FontSize.xs, color: Colors.textTertiary, marginTop: Spacing.sm, marginBottom: Spacing.sm }}>选择所属一级分类（留空则为一级分类）</Text>
+          <View style={S.chips}>
+            <Pressable style={[S.badge, newParent === null && S.badgeActive]} onPress={() => setNewParent(null)}>
+              <Text style={S.badgeText}>一级分类</Text>
+            </Pressable>
+            {parents.map((p) => (
+              <Pressable key={p.id} style={[S.badge, newParent === p.id && S.badgeActive]} onPress={() => setNewParent(p.id)}>
+                <Text style={S.badgeText}>{p.name}</Text>
+              </Pressable>
+            ))}
           </View>
           <View style={{ flexDirection: "row", gap: Spacing.md, marginTop: Spacing.md }}>
-            <Pressable style={S.cancelBtn} onPress={() => { setAdding(false); setNewName(""); }}>
+            <Pressable style={S.cancelBtn} onPress={() => { setAdding(false); setNewName(""); setNewParent(null); }}>
               <Text style={S.cancelText}>取消</Text>
             </Pressable>
             <Pressable
               style={[S.saveBtn, !newName && { opacity: 0.45 }]}
               onPress={async () => {
                 if (!newName) return;
-                await addCat({ name: newName, icon: newIcon, sortOrder: categories.length + 1 });
+                const sortOrder = newParent
+                  ? (categories.filter((c) => c.parentId === newParent).length + 1)
+                  : (parents.length + 1);
+                await addCat({ name: newName, icon: "", sortOrder, parentId: newParent });
                 setAdding(false);
                 setNewName("");
+                setNewParent(null);
               }}
             >
               <Text style={S.saveText}>添加</Text>
@@ -151,20 +190,11 @@ const S = StyleSheet.create({
     borderColor: Colors.border,
   },
   row: { flexDirection: "row", alignItems: "center", gap: Spacing.md },
-  iconWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: Colors.surface,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  icon: { fontSize: 24 },
-  name: { fontSize: FontSize.md, fontWeight: "600", color: Colors.textPrimary },
+  name: { fontSize: FontSize.base, fontWeight: "600", color: Colors.textPrimary },
   count: { fontSize: FontSize.sm, color: Colors.textTertiary, marginTop: 2 },
   actionBtn: { padding: 8, minHeight: TouchMin, justifyContent: "center" },
 
-  editRow: { flexDirection: "row", alignItems: "center", gap: Spacing.md },
+  editRow: { flexDirection: "row", alignItems: "center", gap: Spacing.sm, flexWrap: "wrap" },
   input: {
     backgroundColor: Colors.surface,
     borderRadius: Radius.md,
@@ -173,8 +203,21 @@ const S = StyleSheet.create({
     color: Colors.textPrimary,
     borderWidth: 1,
     borderColor: Colors.border,
+    minWidth: 120,
   },
   editAction: { padding: 8 },
+
+  chips: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.sm },
+  badge: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: Radius.full,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  badgeActive: { backgroundColor: Colors.accent, borderColor: Colors.accent },
+  badgeText: { fontSize: FontSize.xs, color: Colors.textSecondary },
 
   addBtn: {
     flexDirection: "row",
