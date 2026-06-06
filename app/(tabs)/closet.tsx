@@ -48,6 +48,7 @@ export default function ClosetScreen() {
       <FlatList
         data={filtered}
         numColumns={2}
+        style={{ flex: 1 }}
         contentContainerStyle={S.grid}
         renderItem={({ item }: { item: Clothing }) => (
           <Pressable style={({ pressed }) => [S.item, pressed && S.itemPressed]} onPress={() => router.push(`/closet/${item.id}`)}>
