@@ -86,17 +86,24 @@ export async function importClosetData(
   const data = JSON.parse(jsonText);
   console.log("[import] JSON parsed, clothing count:", data.clothings?.length);
 
-  // 2. Build category map
+  // 2. Build lookup maps
   const subCatMap = new Map<string, string>();
   for (const cat of data.categories || []) {
     for (const sub of cat.subCategories || []) {
       subCatMap.set(sub.uuid.toUpperCase(), sub.nameKey_ || "");
     }
   }
+  const brandMap = new Map<string, string>();
+  for (const b of data.brands || []) brandMap.set(b.uuid.toUpperCase(), b.desc_ || "");
+  const locationMap = new Map<string, string>();
+  for (const l of data.locations || []) locationMap.set(l.uuid.toUpperCase(), l.desc_ || "");
+  const sizeMap = new Map<string, string>();
+  for (const s of data.clothingSizes || []) sizeMap.set(s.uuid.toUpperCase(), s.desc_ || "");
+  for (const s of data.shoeSizes || []) sizeMap.set(s.uuid.toUpperCase(), s.desc_ || "");
 
   // 3. Get existing items
   const existingItems = await getAllClothing();
-  console.log("[import] Existing items:", existingItems.length);
+  const existingNames = new Set(existingItems.map((i: any) => i.name?.toLowerCase()));
 
   // 4. Build image index
   const imageFiles = new Map<string, JSZip.JSZipObject>();
@@ -104,47 +111,62 @@ export async function importClosetData(
     const name = path.split("/").pop()?.replace(/\.(png|jpg|jpeg|webp)$/i, "");
     if (name) imageFiles.set(name.toUpperCase(), file);
   });
-  console.log("[import] Images found:", imageFiles.size);
 
-  // 5. Import items (first 50 for quick test)
+  // 5. Import
   const clothingList = data.clothings || [];
   let count = 0;
 
   for (let i = 0; i < clothingList.length; i++) {
     const c = clothingList[i];
+    const uuid = c.uuid || "";
     const name = (c.name || "").trim();
     const imgUUID = (c.imageDataUUID || "").toUpperCase();
 
     onProgress?.({ current: i + 1, total: clothingList.length, message: `${i + 1}/${clothingList.length}` });
 
-    // 用图片名当名称
+    if (name && existingNames.has(name.toLowerCase())) continue; // Skip duplicate
+
     const displayName = name || imgUUID.slice(0, 8);
 
     try {
-      // Store image in IndexedDB and use idx:// URL
+      // Image to IndexedDB
       let imageUri = "placeholder";
       if (imageFiles.has(imgUUID)) {
         try {
           const base64 = await imageFiles.get(imgUUID)!.async("base64");
           await saveImageToIDB(imgUUID, base64);
           imageUri = "idx://" + imgUUID;
-        } catch (e) { console.warn("[import] IDB save failed for", imgUUID, e); }
+        } catch (e) { console.warn("[import] IDB fail", imgUUID); }
       }
 
       const subName = subCatMap.get((c.categoryUUID || "").toUpperCase());
       const categoryId = mapCategory(subName);
 
+      // Build notes with all metadata
+      const metaParts: string[] = [];
+      const brand = brandMap.get((c.brandUUID || "").toUpperCase()) || "";
+      const location = locationMap.get((c.locationUUID || "").toUpperCase()) || "";
+      const size = sizeMap.get((c.clothingSizeUUID || "").toUpperCase()) || sizeMap.get((c.shoeSizeUUID || "").toUpperCase()) || "";
+      const price = c.price ? `¥${c.price}` : "";
+      if (brand) metaParts.push(`品牌:${brand}`);
+      if (size) metaParts.push(`尺码:${size}`);
+      if (price) metaParts.push(price);
+      if (location) metaParts.push(`存放:${location}`);
+      if (c.comment_) metaParts.push(c.comment_);
+      if (c.purchaseDate) metaParts.push(`购买:${c.purchaseDate}`);
+      if (c.wearsTotal) metaParts.push(`穿着${c.wearsTotal}次`);
+
       await addClothing({
         categoryId,
         name: displayName,
-        imageUri: imageUri || "placeholder",
-        brand: "",
+        imageUri,
+        brand,
         color: c.primaryColorHex || "",
         season: mapSeason(c.season),
-        notes: c.comment_ || "",
+        notes: metaParts.join(" | "),
       });
+
       count++;
-      console.log("[import] Imported:", displayName, "→", categoryId);
     } catch (e: any) {
       console.error("[import] Failed:", displayName, e?.message || e);
     }
