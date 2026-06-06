@@ -1,2 +1,24 @@
  UPDATE  The latest version of `serve` is 14.2.6
  INFO  Accepting connections at http://localhost:8080
+ HTTP  2026/6/7 00:43:52 127.0.0.1 GET /wardrobe/
+ HTTP  2026/6/7 00:43:52 127.0.0.1 Returned 200 in 20 ms
+ HTTP  2026/6/7 00:44:02 127.0.0.1 GET /wardrobe/_expo/static/js/web/entry-536b2af302af7303d8f8cc8392473941.js
+ HTTP  2026/6/7 00:44:02 127.0.0.1 Returned 200 in 9 ms
+ HTTP  2026/6/7 00:44:22 ::1 GET /wardrobe/
+ HTTP  2026/6/7 00:44:22 ::1 Returned 200 in 4 ms
+ HTTP  2026/6/7 00:44:22 ::1 GET /wardrobe/_expo/static/js/web/entry-536b2af302af7303d8f8cc8392473941.js
+ HTTP  2026/6/7 00:44:22 ::1 Returned 200 in 4 ms
+ HTTP  2026/6/7 00:44:24 ::1 GET /wardrobe/assets/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Ionicons.b4eb097d35f44ed943676fd56f6bdc51.ttf
+ HTTP  2026/6/7 00:44:24 ::1 Returned 200 in 7 ms
+ HTTP  2026/6/7 00:44:24 ::1 GET /wardrobe/favicon.ico
+ HTTP  2026/6/7 00:44:24 ::1 Returned 200 in 4 ms
+ HTTP  2026/6/7 00:44:44 ::1 GET /wardrobe/
+ HTTP  2026/6/7 00:44:44 ::1 Returned 304 in 3 ms
+ HTTP  2026/6/7 00:44:44 ::1 GET /wardrobe/_expo/static/js/web/entry-536b2af302af7303d8f8cc8392473941.js
+ HTTP  2026/6/7 00:44:44 ::1 Returned 304 in 2 ms
+ HTTP  2026/6/7 00:44:45 ::1 GET /wardrobe/assets/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Ionicons.b4eb097d35f44ed943676fd56f6bdc51.ttf
+ HTTP  2026/6/7 00:44:45 ::1 Returned 304 in 3 ms
+ HTTP  2026/6/7 00:46:30 ::1 GET /wardrobe/outfits
+ HTTP  2026/6/7 00:46:30 ::1 Returned 404 in 3 ms
+ HTTP  2026/6/7 00:46:31 ::1 GET /favicon.ico
+ HTTP  2026/6/7 00:46:31 ::1 Returned 404 in 3 ms
