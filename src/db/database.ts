@@ -19,14 +19,27 @@ const STORAGE_KEYS = {
   settings: "@wardrobe/settings",
 };
 
+let storageAvailable = true;
+
 async function getJson<T>(key: string, fallback: T): Promise<T> {
-  const raw = await AsyncStorage.getItem(key);
-  if (!raw) return fallback;
-  try { return JSON.parse(raw); } catch { return fallback; }
+  if (!storageAvailable) return fallback;
+  try {
+    const raw = await AsyncStorage.getItem(key);
+    if (!raw) return fallback;
+    return JSON.parse(raw);
+  } catch {
+    storageAvailable = false;
+    return fallback;
+  }
 }
 
 async function setJson<T>(key: string, value: T): Promise<void> {
-  await AsyncStorage.setItem(key, JSON.stringify(value));
+  if (!storageAvailable) return;
+  try {
+    await AsyncStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    storageAvailable = false;
+  }
 }
 
 // ====== 初始化 ======
