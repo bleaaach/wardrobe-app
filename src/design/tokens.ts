@@ -1,44 +1,47 @@
-// 设计系统 — 温暖、简洁、像 iOS Things 一样优雅
+// 设计系统 — 暗色画廊风：深色背景，琥珀金强调，图片主角
 export const Colors = {
-  // 主色调 - 温暖柔和的奶油/米色系背景
-  bg: "#FAF8F5",
-  surface: "#FFFFFF",
-  surfaceHover: "#F5F2EE",
-  surfaceActive: "#EDE9E4",
+  // 背景 - 极深黑系列
+  bg: "#0A0A0A",
+  surface: "#141414",
+  surfaceElevated: "#1E1E1E",
+  surfaceHighlight: "#2A2A2A",
 
-  // 文字 - 深度层次
-  textPrimary: "#1C1917",
-  textSecondary: "#78716C",
-  textTertiary: "#A8A29E",
-  textInverse: "#FFFFFF",
+  // 文字 - 层次分明
+  textPrimary: "#FFFFFF",
+  textSecondary: "#9CA3AF",
+  textTertiary: "#6B7280",
+  textInverse: "#0A0A0A",
 
-  // 强调色 - 柔和温暖
-  accent: "#E07A5F",        // 温暖陶土色
-  accentLight: "#FDE8E0",   // 浅陶土色背景
-  accentMuted: "#F4A58A",   // 浅陶土
+  // 强调色 - 琥珀金
+  accent: "#E8B86D",
+  accentLight: "rgba(232, 184, 109, 0.15)",
+  accentMuted: "rgba(232, 184, 109, 0.5)",
 
   // 功能色
   success: "#6B9B6F",
   danger: "#E07A5F",
   warning: "#D4A853",
 
-  // 分类颜色
-  catTop: "#E8D5C4",      // 上衣 - 暖棕
-  catBottom: "#C4D3E8",   // 裤子 - 柔蓝
-  catDress: "#E8C4D3",    // 裙子 - 柔粉
-  catOuter: "#D4C4E8",    // 外套 - 柔紫
-  catShoes: "#C4E8D5",    // 鞋子 - 柔绿
-  catAccessory: "#E8E4C4", // 配饰 - 柔金
-  catBag: "#C4D8E8",       // 包包 - 天蓝
+  // 分类颜色（暗色版）
+  catTop: "#E8B86D",
+  catBottom: "#8FA8D9",
+  catDress: "#D48FB3",
+  catOuter: "#B8A0D9",
+  catShoes: "#8FD4A8",
+  catAccessory: "#D4C88F",
+  catBag: "#8FC8D4",
 
   // 边框/分割线
-  border: "#E7E5E4",
-  divider: "#F0EEEC",
+  border: "rgba(255, 255, 255, 0.08)",
+  divider: "rgba(255, 255, 255, 0.06)",
 
-  // 阴影
-  shadow: "rgba(28, 25, 23, 0.06)",
-  shadowMd: "rgba(28, 25, 23, 0.10)",
-  shadowLg: "rgba(28, 25, 23, 0.14)",
+  // 阴影（暗色更微妙）
+  shadow: "rgba(0, 0, 0, 0.4)",
+  shadowMd: "rgba(0, 0, 0, 0.5)",
+  shadowLg: "rgba(0, 0, 0, 0.6)",
+
+  // 发光效果
+  glow: "rgba(232, 184, 109, 0.3)",
 };
 
 export const Spacing = {
@@ -69,32 +72,29 @@ export const FontSize = {
   xxl: 32,
 };
 
-export const TouchMin = 44; // 最小触控区域
+export const TouchMin = 44;
+export const PressedOpacity = 0.7;
 
-// 统一的阴影样式
 export const Shadows = {
   sm: {
     shadowColor: Colors.shadow,
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 1,
-    shadowRadius: 3,
+    shadowRadius: 8,
     elevation: 2,
   },
   md: {
     shadowColor: Colors.shadowMd,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 1,
-    shadowRadius: 12,
+    shadowRadius: 16,
     elevation: 4,
   },
   lg: {
     shadowColor: Colors.shadowLg,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 1,
-    shadowRadius: 24,
+    shadowRadius: 32,
     elevation: 8,
   },
 };
-
-// 按压反馈的不透明度
-export const PressedOpacity = 0.75;

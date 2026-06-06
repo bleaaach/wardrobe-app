@@ -10,7 +10,7 @@ interface Props {
   onPress?: () => void;
 }
 
-export function IconButton({ name, size = 22, color = Colors.textPrimary, bg = Colors.surface, onPress }: Props) {
+export function IconButton({ name, size = 22, color = Colors.textPrimary, bg = "rgba(255,255,255,0.1)", onPress }: Props) {
   return (
     <Pressable
       style={({ pressed }) => [S.btn, { backgroundColor: bg }, pressed && S.pressed]}

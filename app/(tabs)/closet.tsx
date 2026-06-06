@@ -22,36 +22,39 @@ export default function ClosetScreen() {
 
   return (
     <View style={S.container}>
-      {/* Category Chips */}
+      {/* Category Stories - Large Horizontal Scroll */}
       <FlatList
         horizontal
-        data={[{ id: null as any, name: "全部", icon: "📋" }, ...categories]}
+        data={[{ id: null as any, name: "全部", icon: "✦" }, ...categories]}
         showsHorizontalScrollIndicator={false}
         style={S.catList}
-        contentContainerStyle={{ paddingHorizontal: Spacing.lg }}
+        contentContainerStyle={{ paddingHorizontal: Spacing.lg, gap: Spacing.md }}
         renderItem={({ item }) => {
           const active = selectedCat === item.id;
           return (
             <Pressable
-              style={[S.chip, active && S.chipActive]}
+              style={[S.catCard, active && S.catCardActive]}
               onPress={() => setSelectedCat(active ? null : item.id)}
             >
-              <Text style={[S.chipText, active && S.chipTextActive]}>{item.icon} {item.name}</Text>
+              <Text style={[S.catIcon, active && S.catIconActive]}>{item.icon}</Text>
+              <Text style={[S.catName, active && S.catNameActive]}>{item.name}</Text>
             </Pressable>
           );
         }}
         keyExtractor={(item) => item.id || "all"}
       />
 
-      {/* Grid */}
+      {/* Large Image Grid */}
       <FlatList
         data={filtered}
-        numColumns={3}
+        numColumns={2}
         contentContainerStyle={S.grid}
         renderItem={({ item }: { item: Clothing }) => (
           <Pressable style={({ pressed }) => [S.item, pressed && S.itemPressed]} onPress={() => router.push(`/closet/${item.id}`)}>
             <AsyncImage uri={item.imageUri} style={S.image} />
-            <Text style={S.name} numberOfLines={1}>{item.name || catName(item.categoryId)}</Text>
+            <View style={S.itemOverlay}>
+              <Text style={S.itemName} numberOfLines={1}>{item.name || catName(item.categoryId)}</Text>
+            </View>
           </Pressable>
         )}
         keyExtractor={(item) => item.id}
@@ -66,7 +69,7 @@ export default function ClosetScreen() {
 
       {/* FAB */}
       <Pressable style={S.fab} onPress={() => router.push("/closet/add")}>
-        <Ionicons name="add" size={26} color="#fff" />
+        <Ionicons name="add" size={26} color={Colors.textInverse} />
       </Pressable>
     </View>
   );
@@ -74,15 +77,64 @@ export default function ClosetScreen() {
 
 const S = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bg },
-  catList: { maxHeight: 56, marginVertical: Spacing.md },
-  chip: { paddingHorizontal: 16, paddingVertical: 10, marginRight: 8, borderRadius: Radius.full, backgroundColor: Colors.surface, minHeight: TouchMin, justifyContent: "center", borderWidth: 1, borderColor: Colors.divider },
-  chipActive: { backgroundColor: Colors.accent, borderColor: Colors.accent },
-  chipText: { fontSize: FontSize.sm, color: Colors.textSecondary },
-  chipTextActive: { color: Colors.textInverse, fontWeight: "600" },
-  grid: { paddingHorizontal: Spacing.sm, paddingBottom: 120 },
-  item: { flex: 1, margin: 4, backgroundColor: Colors.surface, borderRadius: Radius.md, overflow: "hidden", ...Shadows.sm },
+
+  // Category Cards (Instagram Stories style)
+  catList: { maxHeight: 100, marginVertical: Spacing.md },
+  catCard: {
+    width: 72,
+    height: 88,
+    borderRadius: Radius.lg,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 4,
+  },
+  catCardActive: {
+    backgroundColor: Colors.accentLight,
+    borderColor: Colors.accent,
+  },
+  catIcon: { fontSize: 24, color: Colors.textSecondary },
+  catIconActive: { color: Colors.accent },
+  catName: { fontSize: FontSize.xs, color: Colors.textSecondary, fontWeight: "500" },
+  catNameActive: { color: Colors.accent, fontWeight: "600" },
+
+  // Grid
+  grid: { paddingHorizontal: Spacing.md, paddingBottom: 120 },
+  item: {
+    flex: 1,
+    margin: 6,
+    borderRadius: Radius.lg,
+    overflow: "hidden",
+    backgroundColor: Colors.surface,
+    position: "relative",
+    ...Shadows.sm,
+  },
   itemPressed: { opacity: PressedOpacity },
-  image: { width: "100%", aspectRatio: 0.8, backgroundColor: Colors.border },
-  name: { fontSize: FontSize.xs, color: Colors.textSecondary, padding: 6, textAlign: "center" },
-  fab: { position: "absolute", bottom: 24, right: 24, width: 56, height: 56, borderRadius: 28, backgroundColor: Colors.accent, justifyContent: "center", alignItems: "center", ...Shadows.md },
+  image: { width: "100%", aspectRatio: 0.85, backgroundColor: Colors.surfaceHighlight },
+  itemOverlay: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.sm,
+    backgroundColor: "rgba(0,0,0,0.5)",
+  },
+  itemName: { fontSize: FontSize.xs, color: Colors.textPrimary, fontWeight: "500" },
+
+  // FAB
+  fab: {
+    position: "absolute",
+    bottom: 24,
+    right: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: Colors.accent,
+    justifyContent: "center",
+    alignItems: "center",
+    ...Shadows.md,
+  },
 });

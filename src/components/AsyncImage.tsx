@@ -52,14 +52,14 @@ export function AsyncImage({ uri, style }: { uri: string; style?: any }) {
 
   if (loading) {
     return (
-      <View style={[{ backgroundColor: Colors.divider, justifyContent: "center", alignItems: "center" }, style]}>
+      <View style={[{ backgroundColor: Colors.surface, justifyContent: "center", alignItems: "center" }, style]}>
         <ActivityIndicator size="small" color={Colors.textTertiary} />
       </View>
     );
   }
   if (!src) {
     return (
-      <View style={[{ backgroundColor: Colors.divider, justifyContent: "center", alignItems: "center" }, style]}>
+      <View style={[{ backgroundColor: Colors.surface, justifyContent: "center", alignItems: "center" }, style]}>
         <Text style={{ fontSize: 10, color: Colors.textTertiary }}>📷</Text>
       </View>
     );

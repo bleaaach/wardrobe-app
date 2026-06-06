@@ -77,15 +77,17 @@ export default function ClothingDetail() {
 
   return (
     <ScrollView style={S.container} contentContainerStyle={S.content} showsVerticalScrollIndicator={false}>
+      {/* Hero Image - Full Width Dark Immersive */}
       <View style={S.imageWrap}>
         <AsyncImage uri={item.imageUri} style={S.image} />
         <View style={S.overlayActions}>
-          <IconButton name="close" onPress={() => router.back()} />
+          <IconButton name="close" color={Colors.textPrimary} onPress={() => router.back()} />
           <View style={{ flexDirection: "row", gap: 8 }}>
             <IconButton name={item.favorite ? "heart" : "heart-outline"} color={item.favorite ? Colors.danger : Colors.textPrimary} onPress={() => updateItem(id!, { favorite: item.favorite ? 0 : 1 })} />
             <IconButton name={editing ? "checkmark" : "create-outline"} color={editing ? Colors.accent : Colors.textPrimary} onPress={() => editing ? save() : setEditing(true)} />
           </View>
         </View>
+        <View style={S.imageGradient} />
       </View>
 
       <View style={S.info}>
@@ -100,12 +102,14 @@ export default function ClothingDetail() {
         )}
 
         {/* Category (edit only) */}
-        {editing && <><Text style={S.label}>分类</Text><ChipGroup options={categories.map(c=>c.icon+c.name)} selected={cat?.icon+cat?.name||""} onToggle={()=>{}} /></>}
-        {editing && <View style={S.chips}>{categories.map((c)=>(
-          <Pressable key={c.id} style={[S.chip, catId===c.id&&S.chipActive]} onPress={()=>setCatId(c.id)}>
-            <Text style={[S.chipText, catId===c.id&&S.chipActiveText]}>{c.icon} {c.name}</Text>
-          </Pressable>
-        ))}</View>}
+        {editing && <><Text style={S.label}>分类</Text><View style={S.chips}>{categories.map((c)=>{
+          const isActive = catId === c.id;
+          return (
+            <Pressable key={c.id} style={[S.chip, isActive&&S.chipActive]} onPress={()=>setCatId(c.id)}>
+              <Text style={[S.chipText, isActive&&S.chipActiveText]}>{c.icon} {c.name}</Text>
+            </Pressable>
+          );
+        })}</View></>}
 
         <Field label="品牌">{editing && <TextInput style={S.input} value={brand} onChangeText={setBrand} placeholder="Nike" placeholderTextColor={Colors.textTertiary} />}</Field>
 
@@ -131,10 +135,16 @@ export default function ClothingDetail() {
 
         {/* Stats */}
         {!editing && (
-          <>
-            <Field label="穿着次数" value={String(wearCount)} />
-            <Field label="单次穿着成本" value={`¥${costPerWear}`} />
-          </>
+          <View style={S.statsRow}>
+            <View style={S.statBox}>
+              <Text style={S.statNum}>{wearCount}</Text>
+              <Text style={S.statLabel}>穿着次数</Text>
+            </View>
+            <View style={S.statBox}>
+              <Text style={S.statNum}>¥{costPerWear}</Text>
+              <Text style={S.statLabel}>单次成本</Text>
+            </View>
+          </View>
         )}
 
         <Field label="备注">{editing && <TextInput style={[S.input, S.notesInput]} value={notes} onChangeText={setNotes} placeholder="备注信息" placeholderTextColor={Colors.textTertiary} multiline />}</Field>
@@ -157,23 +167,78 @@ const S = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bg },
   content: { paddingBottom: 40 },
   centered: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: Colors.bg },
-  imageWrap: { position: "relative", width: "100%", height: 340 },
+
+  imageWrap: { position: "relative", width: "100%", height: 420 },
   image: { width: "100%", height: "100%", backgroundColor: Colors.surface },
-  overlayActions: { position: "absolute", top: 48, left: 16, right: 16, flexDirection: "row", justifyContent: "space-between" },
+  imageGradient: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 100,
+    backgroundColor: "rgba(10,10,10,0.6)",
+  },
+  overlayActions: { position: "absolute", top: 48, left: 16, right: 16, flexDirection: "row", justifyContent: "space-between", zIndex: 10 },
+
   info: { padding: Spacing.xl, paddingTop: Spacing.lg },
   name: { fontSize: FontSize.xl, fontWeight: "700", color: Colors.textPrimary, marginBottom: 2 },
   cat: { fontSize: FontSize.sm, color: Colors.accent, marginBottom: Spacing.lg, fontWeight: "500" },
+
   fieldWrap: { marginTop: Spacing.lg },
   label: { fontSize: FontSize.sm, fontWeight: "600", color: Colors.textSecondary, marginBottom: Spacing.sm },
   value: { fontSize: FontSize.base, color: Colors.textPrimary },
-  input: { fontSize: FontSize.base, paddingVertical: 10, borderBottomWidth: 1, borderColor: Colors.divider, color: Colors.textPrimary, marginBottom: Spacing.sm },
+
+  input: {
+    fontSize: FontSize.base,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderColor: Colors.border,
+    color: Colors.textPrimary,
+    marginBottom: Spacing.sm,
+  },
   notesInput: { height: 80, textAlignVertical: "top" },
+
   chips: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.sm, marginBottom: Spacing.sm },
-  chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: Radius.full, backgroundColor: Colors.surface, minHeight: TouchMin, justifyContent: "center", borderWidth: 1, borderColor: Colors.divider },
+  chip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: Radius.full,
+    backgroundColor: Colors.surface,
+    minHeight: TouchMin,
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
   chipActive: { backgroundColor: Colors.accent, borderColor: Colors.accent },
   chipText: { fontSize: FontSize.sm, color: Colors.textSecondary },
   chipActiveText: { color: Colors.textInverse, fontWeight: "600" },
-  deleteBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 14, minHeight: TouchMin, borderRadius: Radius.lg, backgroundColor: Colors.surface, marginTop: Spacing.xxl },
+
+  statsRow: { flexDirection: "row", gap: Spacing.md, marginTop: Spacing.xl },
+  statBox: {
+    flex: 1,
+    backgroundColor: Colors.surfaceElevated,
+    borderRadius: Radius.lg,
+    padding: Spacing.lg,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  statNum: { fontSize: FontSize.lg, fontWeight: "700", color: Colors.accent },
+  statLabel: { fontSize: FontSize.xs, color: Colors.textSecondary, marginTop: 4 },
+
+  deleteBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 14,
+    minHeight: TouchMin,
+    borderRadius: Radius.lg,
+    backgroundColor: Colors.surface,
+    marginTop: Spacing.xxl,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
   pressed: { opacity: PressedOpacity },
   deleteText: { color: Colors.textTertiary, fontSize: FontSize.base, fontWeight: "500" },
 });

@@ -2,7 +2,6 @@ import { View, Text, ScrollView, Pressable, TextInput, StyleSheet, Alert, Platfo
 import { useEffect, useState, useRef } from "react";
 import * as FileSystem from "expo-file-system";
 import * as Sharing from "expo-sharing";
-import { Header } from "../../src/components/ui/Header";
 import { Ionicons } from "@expo/vector-icons";
 import { getSetting, setSetting } from "../../src/db/database";
 import { useClothingStore } from "../../src/store/clothingStore";
@@ -28,7 +27,7 @@ export default function SettingsScreen() {
 
   const Row = ({ icon, title, onPress, danger }: { icon: string; title: string; onPress?: () => void; danger?: boolean }) => (
     <Pressable style={({ pressed }) => [S.row, pressed && S.rowPressed]} onPress={onPress}>
-      <Text style={S.rowIcon}>{icon}</Text>
+      <Ionicons name={icon as any} size={20} color={danger ? Colors.danger : Colors.accent} style={{ marginRight: Spacing.md }} />
       <Text style={[S.rowText, danger && { color: Colors.danger }]}>{title}</Text>
       <Ionicons name="chevron-forward" size={16} color={Colors.textTertiary} />
     </Pressable>
@@ -36,34 +35,36 @@ export default function SettingsScreen() {
 
   return (
     <ScrollView style={S.container} contentContainerStyle={S.content}>
-      <Header title="设置" />
+      <View style={S.header}>
+        <Text style={S.headerTitle}>设置</Text>
+      </View>
 
       <Text style={S.sectionTitle}>数据</Text>
       <View style={S.card}>
-        <Row icon="📤" title="导出备份" onPress={async () => {
+        <Row icon="share-outline" title="导出备份" onPress={async () => {
           try {
             const dbPath = (FileSystem as any).documentDirectory + "SQLite/wardrobe.db";
             await Sharing.shareAsync(dbPath, { dialogTitle: "保存备份" });
           } catch { Alert.alert("提示", "备份功能开发中"); }
         }} />
-        <Row icon="📥" title="恢复备份" onPress={() => Alert.alert("提示", "开发中")} />
+        <Row icon="cloud-download-outline" title="恢复备份" onPress={() => Alert.alert("提示", "开发中")} />
       </View>
 
       <Text style={S.sectionTitle}>同步设置</Text>
       <View style={S.card}>
         <View style={S.inputRow}>
           <Text style={S.label}>服务器地址</Text>
-          <TextInput style={S.input} value={syncUrl} onChangeText={setSyncUrl} onBlur={() => setSetting("syncUrl", syncUrl)} placeholder="http://8.162.26.192/sync" />
+          <TextInput style={S.input} value={syncUrl} onChangeText={setSyncUrl} onBlur={() => setSetting("syncUrl", syncUrl)} placeholder="http://8.162.26.192/sync" placeholderTextColor={Colors.textTertiary} />
         </View>
         <View style={S.inputRow}>
           <Text style={S.label}>Token</Text>
-          <TextInput style={S.input} value={token} onChangeText={setToken} onBlur={() => setSetting("token", token)} secureTextEntry placeholder="登录后获取" />
+          <TextInput style={S.input} value={token} onChangeText={setToken} onBlur={() => setSetting("token", token)} secureTextEntry placeholder="登录后获取" placeholderTextColor={Colors.textTertiary} />
         </View>
       </View>
 
       <Text style={S.sectionTitle}>数据管理</Text>
       <View style={S.card}>
-        <Row icon="🗑️" title="清空衣橱" danger onPress={() => {
+        <Row icon="trash-outline" title="清空衣橱" danger onPress={() => {
           if (typeof window !== "undefined" && window.confirm) {
             if (window.confirm("确定要删除所有衣物数据吗？此操作不可恢复")) {
               try {
@@ -139,17 +140,52 @@ export default function SettingsScreen() {
 const S = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bg },
   content: { paddingHorizontal: Spacing.xl },
-  card: { backgroundColor: Colors.surface, borderRadius: Radius.lg, marginBottom: Spacing.xl, overflow: "hidden" },
-  row: { flexDirection: "row", alignItems: "center", padding: Spacing.lg, borderBottomWidth: 1, borderColor: Colors.divider, minHeight: TouchMin },
-  rowPressed: { backgroundColor: Colors.surfaceHover },
-  rowIcon: { fontSize: 20, marginRight: Spacing.md },
+
+  header: { paddingTop: 60, paddingBottom: Spacing.lg },
+  headerTitle: { fontSize: FontSize.xxl, fontWeight: "700", color: Colors.textPrimary, letterSpacing: -0.5 },
+
+  card: {
+    backgroundColor: Colors.surfaceElevated,
+    borderRadius: Radius.lg,
+    marginBottom: Spacing.xl,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: Spacing.lg,
+    borderBottomWidth: 1,
+    borderColor: Colors.divider,
+    minHeight: TouchMin,
+  },
+  rowPressed: { backgroundColor: Colors.surfaceHighlight },
   rowText: { flex: 1, fontSize: FontSize.base, color: Colors.textPrimary },
+
   sectionTitle: { fontSize: FontSize.sm, fontWeight: "600", color: Colors.textSecondary, marginBottom: Spacing.sm, paddingLeft: 4 },
+
   inputRow: { padding: Spacing.lg, borderBottomWidth: 1, borderColor: Colors.divider },
   label: { fontSize: FontSize.sm, color: Colors.textSecondary, marginBottom: 6 },
-  input: { backgroundColor: Colors.bg, borderRadius: Radius.sm, padding: 12, fontSize: FontSize.base, color: Colors.textPrimary },
-  importBtn: { flexDirection: "row", alignItems: "center", gap: 10, padding: Spacing.lg, minHeight: TouchMin },
-  importBtnPressed: { backgroundColor: Colors.surfaceHover },
+  input: {
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.sm,
+    padding: 12,
+    fontSize: FontSize.base,
+    color: Colors.textPrimary,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+
+  importBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    padding: Spacing.lg,
+    minHeight: TouchMin,
+  },
+  importBtnPressed: { backgroundColor: Colors.surfaceHighlight },
   importText: { fontSize: FontSize.base, color: Colors.accent },
+
   footer: { textAlign: "center", color: Colors.textTertiary, fontSize: FontSize.xs, marginTop: Spacing.xxxl },
 });

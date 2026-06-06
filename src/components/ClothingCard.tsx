@@ -37,7 +37,7 @@ const S = StyleSheet.create({
   card: { backgroundColor: Colors.surface, borderRadius: Radius.md, overflow: "hidden", minHeight: TouchMin },
   selected: { borderWidth: 2, borderColor: Colors.accent, borderRadius: Radius.md },
   pressed: { opacity: PressedOpacity },
-  image: { width: "100%", aspectRatio: 0.75, backgroundColor: Colors.border },
+  image: { width: "100%", aspectRatio: 0.75, backgroundColor: Colors.surfaceHighlight },
   name: { fontSize: FontSize.xs, color: Colors.textPrimary, paddingHorizontal: 6, paddingTop: 6 },
   cat: { fontSize: FontSize.xs, color: Colors.textTertiary, paddingHorizontal: 6, paddingBottom: 6 },
   check: { position: "absolute", top: 6, right: 6, width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: Colors.textTertiary, justifyContent: "center", alignItems: "center" },

@@ -29,8 +29,15 @@ export default function OutfitDetailScreen() {
 
   return (
     <ScrollView style={S.container} contentContainerStyle={S.content}>
+      <View style={S.header}>
+        <Pressable onPress={() => router.back()} hitSlop={12}>
+          <Ionicons name="close" size={28} color={Colors.textPrimary} />
+        </Pressable>
+      </View>
+
       <Text style={S.name}>{outfit.name || "未命名搭配"}</Text>
       <Text style={S.date}>{new Date(outfit.createdAt).toLocaleDateString("zh-CN")}</Text>
+
       <Text style={S.section}>包含衣物 ({items.length}件)</Text>
       <View style={S.grid}>
         {items.map((item) => (
@@ -40,6 +47,7 @@ export default function OutfitDetailScreen() {
           </Pressable>
         ))}
       </View>
+
       <Pressable
         style={({ pressed }) => [S.deleteBtn, pressed && S.pressed]}
         onPress={() => {
@@ -60,14 +68,30 @@ const S = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bg },
   content: { padding: Spacing.xl, paddingBottom: 40 },
   centered: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: Colors.bg },
+
+  header: { flexDirection: "row", justifyContent: "flex-end", marginBottom: Spacing.lg },
   name: { fontSize: FontSize.xl, fontWeight: "700", color: Colors.textPrimary },
   date: { fontSize: FontSize.sm, color: Colors.textTertiary, marginTop: 4 },
+
   section: { fontSize: FontSize.base, fontWeight: "600", color: Colors.textPrimary, marginTop: Spacing.xxl, marginBottom: Spacing.md },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  item: { width: "31%", backgroundColor: Colors.surface, borderRadius: Radius.md, overflow: "hidden" },
+  item: { width: "31%", backgroundColor: Colors.surface, borderRadius: Radius.md, overflow: "hidden", borderWidth: 1, borderColor: Colors.border },
   pressed: { opacity: PressedOpacity },
-  itemImage: { width: "100%", aspectRatio: 0.8, backgroundColor: Colors.border },
+  itemImage: { width: "100%", aspectRatio: 0.8, backgroundColor: Colors.surfaceHighlight },
   itemName: { fontSize: FontSize.xs, color: Colors.textSecondary, padding: 6, textAlign: "center" },
-  deleteBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: Spacing.xxxl, padding: Spacing.lg, borderRadius: Radius.lg, backgroundColor: Colors.surface, minHeight: TouchMin },
+
+  deleteBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    marginTop: Spacing.xxxl,
+    padding: Spacing.lg,
+    borderRadius: Radius.lg,
+    backgroundColor: Colors.surface,
+    minHeight: TouchMin,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
   deleteText: { color: Colors.danger, fontSize: FontSize.base, fontWeight: "500" },
 });

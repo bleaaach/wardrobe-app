@@ -33,14 +33,22 @@ async function setJson<T>(key: string, value: T): Promise<void> {
 
 // ====== 初始化 ======
 export async function initDatabase(): Promise<void> {
-  const cats = await getJson<Category[]>(STORAGE_KEYS.categories, []);
-  if (cats.length === 0) {
-    const defaults: Category[] = DEFAULT_CATEGORIES.map((c, i) => ({
-      ...c,
-      id: `cat_${c.name}`,
-      sortOrder: i + 1,
-    }));
-    await setJson(STORAGE_KEYS.categories, defaults);
+  let cats = await getJson<Category[]>(STORAGE_KEYS.categories, []);
+  const defaults: Category[] = DEFAULT_CATEGORIES.map((c, i) => ({
+    ...c,
+    id: `cat_${c.name}`,
+    sortOrder: i + 1,
+  }));
+  // Force full reset if old version (only 7 categories from v1)
+  if (cats.length <= 7) {
+    cats = defaults;
+  } else {
+    for (const dc of defaults) {
+      if (!cats.find((c) => c.id === dc.id)) cats.push(dc);
+    }
+  }
+  if (cats.length !== defaults.length || cats.length === 0) {
+    await setJson(STORAGE_KEYS.categories, cats);
   }
 }
 
@@ -86,6 +94,7 @@ export async function deleteClothing(id: string): Promise<void> {
 
 // ====== 分类 ======
 export async function getCategories(): Promise<Category[]> {
+  await initDatabase(); // always sync before reading
   return getJson<Category[]>(STORAGE_KEYS.categories, []);
 }
 

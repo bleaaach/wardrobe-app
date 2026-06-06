@@ -1,6 +1,5 @@
 import { View, Text, ScrollView, Pressable, StyleSheet } from "react-native";
 import { useState } from "react";
-import { Header } from "../../src/components/ui/Header";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors, Spacing, Radius, FontSize, PressedOpacity } from "../../src/design/tokens";
 
@@ -17,7 +16,9 @@ export default function CalendarScreen() {
 
   return (
     <ScrollView style={S.container} contentContainerStyle={S.content}>
-      <Header title="穿搭日历" />
+      <View style={S.header}>
+        <Text style={S.headerTitle}>穿搭日历</Text>
+      </View>
 
       <View style={S.nav}>
         <Pressable onPress={() => setMonth((m) => (m === 0 ? 11 : m - 1))} hitSlop={8}>
@@ -48,7 +49,7 @@ export default function CalendarScreen() {
       </View>
 
       <View style={S.card}>
-        <Text style={S.cardTitle}>{selected}</Text>
+        <Text style={S.cardDate}>{selected}</Text>
         <Text style={S.cardSub}>暂无穿搭记录</Text>
       </View>
     </ScrollView>
@@ -58,10 +59,16 @@ export default function CalendarScreen() {
 const S = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bg },
   content: { paddingHorizontal: Spacing.xl, paddingBottom: Spacing.xxxl },
+
+  header: { paddingTop: 60, paddingBottom: Spacing.lg },
+  headerTitle: { fontSize: FontSize.xxl, fontWeight: "700", color: Colors.textPrimary, letterSpacing: -0.5 },
+
   nav: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: Spacing.xxl },
   month: { fontSize: FontSize.lg, fontWeight: "600", color: Colors.textPrimary },
+
   weekRow: { flexDirection: "row", marginBottom: Spacing.sm },
   weekDay: { flex: 1, textAlign: "center", fontSize: FontSize.xs, color: Colors.textTertiary, paddingVertical: Spacing.sm, fontWeight: "500" },
+
   grid: { flexDirection: "row", flexWrap: "wrap" },
   day: { width: "14.28%", aspectRatio: 1, justifyContent: "center", alignItems: "center", borderRadius: Radius.full },
   daySel: { backgroundColor: Colors.accent },
@@ -71,7 +78,16 @@ const S = StyleSheet.create({
   dayTextToday: { color: Colors.accent, fontWeight: "600" },
   dot: { width: 4, height: 4, borderRadius: 2, backgroundColor: Colors.accent, position: "absolute", bottom: 6 },
   dotWhite: { backgroundColor: Colors.textInverse },
-  card: { backgroundColor: Colors.surface, borderRadius: Radius.lg, padding: Spacing.xl, marginTop: Spacing.xxl, alignItems: "center" },
-  cardTitle: { fontSize: FontSize.base, fontWeight: "600", color: Colors.textPrimary },
+
+  card: {
+    backgroundColor: Colors.surfaceElevated,
+    borderRadius: Radius.lg,
+    padding: Spacing.xl,
+    marginTop: Spacing.xxl,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  cardDate: { fontSize: FontSize.base, fontWeight: "600", color: Colors.textPrimary },
   cardSub: { fontSize: FontSize.sm, color: Colors.textTertiary, marginTop: Spacing.sm },
 });

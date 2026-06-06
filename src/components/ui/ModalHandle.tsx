@@ -19,6 +19,6 @@ const S = StyleSheet.create({
     width: 36,
     height: 5,
     borderRadius: Radius.full,
-    backgroundColor: Colors.divider,
+    backgroundColor: "rgba(255,255,255,0.2)",
   },
 });

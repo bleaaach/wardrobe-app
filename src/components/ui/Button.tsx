@@ -51,11 +51,11 @@ const S = StyleSheet.create({
   lg: { paddingVertical: 14, paddingHorizontal: 24, minHeight: TouchMin + 8 },
 
   primary: { backgroundColor: Colors.accent },
-  secondary: { backgroundColor: Colors.surface },
+  secondary: { backgroundColor: Colors.surfaceElevated, borderWidth: 1, borderColor: Colors.border },
   ghost: { backgroundColor: "transparent" },
   danger: { backgroundColor: Colors.danger },
 
-  disabled: { opacity: 0.45 },
+  disabled: { opacity: 0.4 },
   pressed: { opacity: PressedOpacity },
 
   text: { fontSize: FontSize.base, fontWeight: "600" },

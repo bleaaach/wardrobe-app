@@ -10,8 +10,8 @@ export default function TabLayout() {
         tabBarActiveTintColor: Colors.accent,
         tabBarInactiveTintColor: Colors.textTertiary,
         tabBarStyle: {
-          backgroundColor: Platform.OS === "ios" ? "rgba(255,255,255,0.85)" : Colors.surface,
-          borderTopColor: Colors.divider,
+          backgroundColor: Platform.OS === "ios" ? "rgba(10,10,10,0.92)" : Colors.bg,
+          borderTopColor: Colors.border,
           borderTopWidth: 1,
           height: Platform.OS === "ios" ? 88 : 64,
           paddingBottom: Platform.OS === "ios" ? 28 : 8,
@@ -21,7 +21,7 @@ export default function TabLayout() {
             ios: {
               shadowColor: Colors.shadowMd,
               shadowOffset: { width: 0, height: -4 },
-              shadowOpacity: 0.08,
+              shadowOpacity: 0.2,
               shadowRadius: 12,
             },
             android: {
@@ -33,11 +33,36 @@ export default function TabLayout() {
         headerShown: false,
       }}
     >
-      <Tabs.Screen name="index" options={{ title: "首页", tabBarIcon: ({ color, size }) => <Ionicons name="home" size={size - 2} color={color} /> }} />
-      <Tabs.Screen name="closet" options={{ title: "衣橱", tabBarIcon: ({ color, size }) => <Ionicons name="grid" size={size - 2} color={color} /> }} />
-      <Tabs.Screen name="outfits" options={{ title: "搭配", tabBarIcon: ({ color, size }) => <Ionicons name="layers" size={size - 2} color={color} /> }} />
-      <Tabs.Screen name="calendar" options={{ title: "日历", tabBarIcon: ({ color, size }) => <Ionicons name="calendar" size={size - 2} color={color} /> }} />
-      <Tabs.Screen name="settings" options={{ title: "设置", tabBarIcon: ({ color, size }) => <Ionicons name="settings" size={size - 2} color={color} /> }} />
+      <Tabs.Screen name="index" options={{ title: "首页", tabBarIcon: ({ color, size, focused }) => (
+        <View style={{ alignItems: "center" }}>
+          <Ionicons name={focused ? "home" : "home-outline"} size={size - 2} color={color} />
+          {focused && <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: Colors.accent, marginTop: 2, shadowColor: Colors.accent, shadowRadius: 4, shadowOpacity: 0.8 }} />}
+        </View>
+      ) }} />
+      <Tabs.Screen name="closet" options={{ title: "衣橱", tabBarIcon: ({ color, size, focused }) => (
+        <View style={{ alignItems: "center" }}>
+          <Ionicons name={focused ? "grid" : "grid-outline"} size={size - 2} color={color} />
+          {focused && <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: Colors.accent, marginTop: 2, shadowColor: Colors.accent, shadowRadius: 4, shadowOpacity: 0.8 }} />}
+        </View>
+      ) }} />
+      <Tabs.Screen name="outfits" options={{ title: "搭配", tabBarIcon: ({ color, size, focused }) => (
+        <View style={{ alignItems: "center" }}>
+          <Ionicons name={focused ? "layers" : "layers-outline"} size={size - 2} color={color} />
+          {focused && <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: Colors.accent, marginTop: 2, shadowColor: Colors.accent, shadowRadius: 4, shadowOpacity: 0.8 }} />}
+        </View>
+      ) }} />
+      <Tabs.Screen name="calendar" options={{ title: "日历", tabBarIcon: ({ color, size, focused }) => (
+        <View style={{ alignItems: "center" }}>
+          <Ionicons name={focused ? "calendar" : "calendar-outline"} size={size - 2} color={color} />
+          {focused && <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: Colors.accent, marginTop: 2, shadowColor: Colors.accent, shadowRadius: 4, shadowOpacity: 0.8 }} />}
+        </View>
+      ) }} />
+      <Tabs.Screen name="settings" options={{ title: "设置", tabBarIcon: ({ color, size, focused }) => (
+        <View style={{ alignItems: "center" }}>
+          <Ionicons name={focused ? "settings" : "settings-outline"} size={size - 2} color={color} />
+          {focused && <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: Colors.accent, marginTop: 2, shadowColor: Colors.accent, shadowRadius: 4, shadowOpacity: 0.8 }} />}
+        </View>
+      ) }} />
     </Tabs>
   );
 }

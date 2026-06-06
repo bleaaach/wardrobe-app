@@ -48,8 +48,9 @@ async function saveImageToIDB(uuid: string, base64: string): Promise<void> {
 }
 
 function mapCategory(subName?: string): string {
-  if (subName && SUB_CAT_MAP[subName]) return SUB_CAT_MAP[subName];
-  return "cat_上衣";
+  if (!subName) return "cat_T恤";
+  // Use the actual category name from zip
+  return "cat_" + subName;
 }
 
 function mapSeason(seasonFlag: number): string {

@@ -26,7 +26,7 @@ export function EmptyState({ icon, title, subtitle, action }: Props) {
 
 const S = StyleSheet.create({
   container: { alignItems: "center", paddingTop: 80, paddingHorizontal: Spacing.xxxl },
-  icon: { fontSize: 56, marginBottom: Spacing.lg },
+  icon: { fontSize: 56, marginBottom: Spacing.lg, opacity: 0.6 },
   title: { fontSize: FontSize.lg, fontWeight: "600", color: Colors.textPrimary },
   subtitle: { fontSize: FontSize.base, color: Colors.textSecondary, marginTop: 6, marginBottom: Spacing.xl, textAlign: "center" },
   action: { width: "100%", maxWidth: 240 },

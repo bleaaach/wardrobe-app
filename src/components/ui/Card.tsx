@@ -25,9 +25,11 @@ export function Card({ children, style, shadow = "none", padding = "lg", ...rest
 
 const S = StyleSheet.create({
   base: {
-    backgroundColor: Colors.surface,
+    backgroundColor: Colors.surfaceElevated,
     borderRadius: Radius.lg,
     overflow: "hidden",
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   none: {},
   sm: Shadows.sm,
