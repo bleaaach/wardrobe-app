@@ -60,41 +60,76 @@ export default function CreateOutfitScreen() {
       )}
 
       {/* Grid */}
-      <FlatList
-        data={items}
-        numColumns={3}
-        style={{ flex: 1 }}
-        contentContainerStyle={S.grid}
-        renderItem={({ item }) => (
-          <Pressable
-            style={({ pressed }) => [
-              S.item,
-              selected.has(item.id) && S.itemSelected,
-              pressed && S.pressed,
-            ]}
-            onPress={() => toggleItem(item.id)}
-          >
-            <AsyncImage uri={item.imageUri} style={S.itemImage} />
-            {selected.has(item.id) && (
-              <View style={S.check}>
-                <Ionicons name="checkmark-circle" size={24} color={Colors.accent} />
-              </View>
-            )}
+      {items.length === 0 ? (
+        <View style={S.emptyWrap}>
+          <Ionicons name="shirt-outline" size={40} color={Colors.textTertiary} />
+          <Text style={S.emptyTitle}>衣橱是空的</Text>
+          <Text style={S.emptySub}>先添加一些衣物，再来创建搭配</Text>
+          <Pressable style={({ pressed }) => [S.emptyBtn, pressed && S.pressed]} onPress={() => router.push("/closet/add")}>
+            <Text style={S.emptyBtnText}>去添加衣物</Text>
           </Pressable>
-        )}
-        keyExtractor={(item) => item.id}
-      />
+        </View>
+      ) : (
+        <FlatList
+          data={items}
+          numColumns={3}
+          style={{ flex: 1 }}
+          contentContainerStyle={S.grid}
+          renderItem={({ item }) => (
+            <Pressable
+              style={({ pressed }) => [
+                S.item,
+                selected.has(item.id) && S.itemSelected,
+                pressed && S.pressed,
+              ]}
+              onPress={() => toggleItem(item.id)}
+            >
+              <AsyncImage uri={item.imageUri} style={S.itemImage} />
+              {selected.has(item.id) && (
+                <View style={S.check}>
+                  <Ionicons name="checkmark-circle" size={24} color={Colors.accent} />
+                </View>
+              )}
+            </Pressable>
+          )}
+          keyExtractor={(item) => item.id}
+        />
+      )}
 
-      <Pressable
-        style={({ pressed }) => [S.saveBtn, selected.size === 0 && S.saveBtnDisabled, pressed && selected.size > 0 && S.pressed]}
-        onPress={async () => {
-          if (selected.size === 0) { Alert.alert("请至少选择一件衣物"); return; }
-          await addOutfit({ name, clothingIds: JSON.stringify([...selected]), notes: "" });
-          router.back();
-        }}
-      >
-        <Text style={S.saveBtnText}>保存搭配</Text>
-      </Pressable>
+      {/* Action Buttons */}
+      <View style={S.actionRow}>
+        <Pressable
+          style={({ pressed }) => [
+            S.saveBtn,
+            selected.size === 0 && S.saveBtnDisabled,
+            pressed && selected.size > 0 && S.pressed,
+          ]}
+          onPress={async () => {
+            if (selected.size === 0) { Alert.alert("请至少选择一件衣物"); return; }
+            await addOutfit({ name, clothingIds: JSON.stringify([...selected]), notes: "" });
+            router.back();
+          }}
+        >
+          <Text style={S.saveBtnText}>直接保存</Text>
+        </Pressable>
+        <Pressable
+          style={({ pressed }) => [
+            S.collageBtn,
+            selected.size === 0 && S.saveBtnDisabled,
+            pressed && selected.size > 0 && S.pressed,
+          ]}
+          onPress={() => {
+            if (selected.size === 0) { Alert.alert("请至少选择一件衣物"); return; }
+            router.push({
+              pathname: "/outfits/collage",
+              params: { ids: Array.from(selected).join(","), name },
+            });
+          }}
+        >
+          <Ionicons name="images-outline" size={18} color={Colors.textInverse} />
+          <Text style={S.collageBtnText}>拼图编辑</Text>
+        </Pressable>
+      </View>
     </View>
   );
 }
@@ -149,8 +184,14 @@ const S = StyleSheet.create({
   itemImage: { width: "100%", aspectRatio: 0.8, backgroundColor: Colors.surfaceHighlight },
   check: { position: "absolute", top: 6, right: 6 },
 
-  saveBtn: {
+  actionRow: {
+    flexDirection: "row",
+    gap: 12,
     margin: Spacing.xl,
+    marginTop: 0,
+  },
+  saveBtn: {
+    flex: 1,
     backgroundColor: Colors.accent,
     borderRadius: Radius.xl,
     paddingVertical: 16,
@@ -159,4 +200,28 @@ const S = StyleSheet.create({
   },
   saveBtnDisabled: { opacity: 0.45 },
   saveBtnText: { color: Colors.textInverse, fontSize: FontSize.md, fontWeight: "600" },
+  collageBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: Colors.surfaceElevated,
+    borderRadius: Radius.xl,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    minHeight: TouchMin,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  collageBtnText: { color: Colors.textPrimary, fontSize: FontSize.md, fontWeight: "600" },
+
+  emptyWrap: { flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: Spacing.xl },
+  emptyTitle: { fontSize: FontSize.lg, fontWeight: "700", color: Colors.textPrimary, marginTop: Spacing.lg },
+  emptySub: { fontSize: FontSize.sm, color: Colors.textTertiary, marginTop: Spacing.sm, marginBottom: Spacing.lg },
+  emptyBtn: {
+    backgroundColor: Colors.accent,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: Radius.lg,
+  },
+  emptyBtnText: { color: Colors.textInverse, fontWeight: "600", fontSize: FontSize.base },
 });

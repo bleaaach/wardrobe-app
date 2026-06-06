@@ -3,7 +3,8 @@ import { AsyncImage } from "../../src/components/AsyncImage";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { getOutfits, deleteOutfit, getAllClothing } from "../../src/db/database";
-import { Outfit, Clothing } from "../../src/types";
+import { Outfit, Clothing, OutfitLayoutItem } from "../../src/types";
+import { CollageCanvas } from "../../src/components/CollageCanvas";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors, Spacing, Radius, FontSize, TouchMin, PressedOpacity } from "../../src/design/tokens";
 
@@ -12,6 +13,7 @@ export default function OutfitDetailScreen() {
   const router = useRouter();
   const [outfit, setOutfit] = useState<Outfit | null>(null);
   const [items, setItems] = useState<Clothing[]>([]);
+  const [layout, setLayout] = useState<OutfitLayoutItem[]>([]);
 
   useEffect(() => { load(); }, [id]);
 
@@ -23,27 +25,40 @@ export default function OutfitDetailScreen() {
     const ids: string[] = JSON.parse(o.clothingIds || "[]");
     const allClothing = await getAllClothing();
     setItems(allClothing.filter((c) => ids.includes(c.id)));
+    if (o.layout) {
+      try { setLayout(JSON.parse(o.layout)); } catch { setLayout([]); }
+    }
   };
 
   if (!outfit) return <View style={S.centered}><Text style={{ color: Colors.textTertiary }}>搭配不存在</Text></View>;
 
+  const hasLayout = layout.length > 0;
+
   return (
     <ScrollView style={S.container} showsVerticalScrollIndicator={false}>
       {/* Hero Collage */}
-      <View style={S.hero}>
-        <View style={S.collage}>
-          {items.slice(0, 4).map((item, i) => (
-            <View key={item.id + i} style={[S.collageItem, i === 0 && S.collageItemLarge]}>
-              <AsyncImage uri={item.imageUri} style={S.collageImage} />
+      <View style={[S.hero, hasLayout && S.heroFlat]}>
+        {hasLayout ? (
+          <View style={S.collageCanvasWrap}>
+            <CollageCanvas items={items} initialLayout={layout} readOnly />
+          </View>
+        ) : (
+          <>
+            <View style={S.collage}>
+              {items.slice(0, 4).map((item, i) => (
+                <View key={item.id + i} style={[S.collageItem, i === 0 && S.collageItemLarge]}>
+                  <AsyncImage uri={item.imageUri} style={S.collageImage} />
+                </View>
+              ))}
+              {items.length === 0 && (
+                <View style={S.collageEmpty}>
+                  <Ionicons name="layers" size={48} color={Colors.textTertiary} />
+                </View>
+              )}
             </View>
-          ))}
-          {items.length === 0 && (
-            <View style={S.collageEmpty}>
-              <Ionicons name="layers" size={48} color={Colors.textTertiary} />
-            </View>
-          )}
-        </View>
-        <View style={S.heroOverlay} />
+            <View style={S.heroOverlay} />
+          </>
+        )}
         <Pressable style={S.closeBtn} onPress={() => router.back()}>
           <Ionicons name="close" size={24} color={Colors.textPrimary} />
         </Pressable>
@@ -59,6 +74,14 @@ export default function OutfitDetailScreen() {
             <Text style={S.noteText}>{outfit.notes}</Text>
           </View>
         ) : null}
+
+        <Pressable
+          style={({ pressed }) => [S.editBtn, pressed && S.pressed]}
+          onPress={() => router.push({ pathname: "/outfits/collage", params: { outfitId: id } })}
+        >
+          <Ionicons name="images-outline" size={18} color={Colors.accent} />
+          <Text style={S.editText}>编辑拼图</Text>
+        </Pressable>
 
         <Text style={S.section}>搭配单品 ({items.length})</Text>
         <View style={S.itemsRow}>
@@ -93,6 +116,7 @@ const S = StyleSheet.create({
   centered: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: Colors.bg },
 
   hero: { position: "relative", width: "100%", height: 380 },
+  heroFlat: { height: "auto", paddingTop: 48, paddingBottom: Spacing.xl },
   collage: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -106,6 +130,10 @@ const S = StyleSheet.create({
   collageItemLarge: { width: "100%", height: "48%" },
   collageImage: { width: "100%", height: "100%" },
   collageEmpty: { flex: 1, justifyContent: "center", alignItems: "center" },
+  collageCanvasWrap: {
+    paddingHorizontal: Spacing.xl,
+    alignItems: "center",
+  },
   heroOverlay: {
     position: "absolute",
     bottom: 0,
@@ -139,6 +167,21 @@ const S = StyleSheet.create({
     borderColor: Colors.border,
   },
   noteText: { fontSize: FontSize.base, color: Colors.textSecondary, lineHeight: 22 },
+
+  editBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: Colors.accentLight,
+    borderRadius: Radius.lg,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginBottom: Spacing.xl,
+    alignSelf: "flex-start",
+    borderWidth: 1,
+    borderColor: Colors.accentMuted,
+  },
+  editText: { color: Colors.accent, fontSize: FontSize.base, fontWeight: "600" },
 
   section: { fontSize: FontSize.lg, fontWeight: "700", color: Colors.textPrimary, marginBottom: Spacing.md },
   itemsRow: { flexDirection: "row", flexWrap: "wrap", gap: 10 },

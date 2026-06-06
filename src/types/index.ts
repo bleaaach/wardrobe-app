@@ -97,12 +97,23 @@ export interface Clothing {
   deleted: number;
 }
 
+// 搭配拼图中单个衣物的布局信息
+export interface OutfitLayoutItem {
+  clothingId: string;
+  x: number;      // 相对于画布中心的偏移（像素）
+  y: number;
+  scale: number;  // 缩放比例
+  zIndex: number; // 层级
+  rotation?: number; // 旋转角度（可选）
+}
+
 // ============ 搭配 ============
 export interface Outfit {
   id: string;
   name: string;
   clothingIds: string; // JSON array
   notes?: string;
+  layout?: string;     // JSON array of OutfitLayoutItem
   createdAt: string;
   updatedAt: string;
   deleted: number;

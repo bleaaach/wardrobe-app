@@ -162,6 +162,15 @@ export async function addOutfit(data: Omit<Outfit, "id" | "createdAt" | "updated
   return item;
 }
 
+export async function updateOutfit(id: string, data: Partial<Outfit>): Promise<void> {
+  const items = await getOutfits();
+  const idx = items.findIndex((i) => i.id === id);
+  if (idx >= 0) {
+    items[idx] = { ...items[idx], ...data, updatedAt: new Date().toISOString() };
+    await setJson(STORAGE_KEYS.outfits, items);
+  }
+}
+
 export async function deleteOutfit(id: string): Promise<void> {
   const items = await getOutfits();
   await setJson(STORAGE_KEYS.outfits, items.filter((i) => i.id !== id));

@@ -8,6 +8,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { Clothing } from "../../src/types";
 import { Colors, Spacing, Radius, FontSize, TouchMin, PressedOpacity, Shadows } from "../../src/design/tokens";
 
+const SIDEBAR_WIDTH = 84;
+
 export default function ClosetScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ subCat?: string }>();
@@ -50,83 +52,92 @@ export default function ClosetScreen() {
   const activeParentName = selectedParent ? parents.find((p) => p.id === selectedParent)?.name : null;
   const activeSubName = params.subCat ? catName(params.subCat) : null;
 
+  const sidebarData = useMemo(() => [{ id: "all", name: "全部" }, ...parents], [parents]);
+
   return (
     <View style={S.container}>
-      {/* Magazine Header */}
+      {/* Header */}
       <View style={S.header}>
         <Text style={S.headerTitle}>Closet</Text>
         <Text style={S.headerSub}>{items.length} 件衣物 · {categories.filter((c) => c.parentId).length} 个分类</Text>
       </View>
 
-      {/* Parent Category Pills */}
-      <FlatList
-        horizontal
-        data={[{ id: "all", name: "全部" }, ...parents]}
-        showsHorizontalScrollIndicator={false}
-        style={S.catList}
-        contentContainerStyle={{ paddingHorizontal: Spacing.xl, gap: Spacing.sm, alignItems: "center" }}
-        renderItem={({ item }) => {
-          const active = item.id === "all" ? !selectedParent && !params.subCat : selectedParent === item.id;
-          return (
+      {/* Sidebar + Content */}
+      <View style={S.body}>
+        {/* Left Sidebar */}
+        <View style={S.sidebar}>
+          <FlatList
+            data={sidebarData}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingVertical: Spacing.sm }}
+            renderItem={({ item }) => {
+              const active = item.id === "all" ? !selectedParent && !params.subCat : selectedParent === item.id;
+              return (
+                <Pressable
+                  style={[S.sidebarItem, active && S.sidebarItemActive]}
+                  onPress={() => {
+                    setSelectedParent(item.id === "all" ? null : item.id);
+                    router.setParams({});
+                  }}
+                >
+                  {active && <View style={S.sidebarIndicator} />}
+                  <Text style={[S.sidebarText, active && S.sidebarTextActive]} numberOfLines={2}>
+                    {item.name}
+                  </Text>
+                </Pressable>
+              );
+            }}
+            keyExtractor={(item) => item.id}
+          />
+        </View>
+
+        {/* Right Content */}
+        <View style={S.content}>
+          {/* Active Filter Title */}
+          {(activeParentName || activeSubName) && (
             <Pressable
-              style={[S.parentPill, active && S.parentPillActive]}
+              style={S.filterTitleWrap}
               onPress={() => {
-                setSelectedParent(item.id === "all" ? null : item.id);
-                router.setParams({});
+                const pid = params.subCat ? parentOf.get(params.subCat) : selectedParent;
+                if (pid) router.push(`/closet/categories?parentId=${pid}`);
               }}
             >
-              <Text style={[S.parentText, active && S.parentTextActive]}>{item.name}</Text>
+              <Text style={S.filterTitle}>{activeSubName || activeParentName}</Text>
+              <Ionicons name="chevron-forward" size={16} color={Colors.accent} />
+              <Text style={S.filterHint}>查看子分类</Text>
             </Pressable>
-          );
-        }}
-        keyExtractor={(item) => item.id}
-      />
+          )}
 
-      {/* Active Filter Title - clickable to sub-categories */}
-      {(activeParentName || activeSubName) && (
-        <Pressable
-          style={S.filterTitleWrap}
-          onPress={() => {
-            const pid = params.subCat ? parentOf.get(params.subCat) : selectedParent;
-            if (pid) router.push(`/closet/categories?parentId=${pid}`);
-          }}
-        >
-          <Text style={S.filterTitle}>
-            {activeSubName || activeParentName}
-          </Text>
-          <Ionicons name="chevron-forward" size={16} color={Colors.accent} />
-          <Text style={S.filterHint}>查看子分类</Text>
-        </Pressable>
-      )}
-
-      {/* Large Image Grid */}
-      <FlatList
-        data={filtered}
-        numColumns={2}
-        style={{ flex: 1 }}
-        contentContainerStyle={S.grid}
-        renderItem={({ item }: { item: Clothing }) => (
-          <Pressable style={({ pressed }) => [S.item, pressed && S.itemPressed]} onPress={() => router.push(`/closet/${item.id}`)}>
-            <AsyncImage uri={item.imageUri} style={S.image} />
-            <View style={S.itemOverlay}>
-              <Text style={S.itemName} numberOfLines={1}>{item.name || catName(item.categoryId)}</Text>
-            </View>
-            {item.favorite === 1 && (
-              <View style={S.favBadge}>
-                <Ionicons name="heart" size={12} color={Colors.danger} />
-              </View>
+          {/* Grid */}
+          <FlatList
+            data={filtered}
+            numColumns={2}
+            style={{ flex: 1 }}
+            contentContainerStyle={S.grid}
+            renderItem={({ item }: { item: Clothing }) => (
+              <Pressable style={({ pressed }) => [S.item, pressed && S.itemPressed]} onPress={() => router.push(`/closet/${item.id}`)}>
+                <AsyncImage uri={item.imageUri} style={S.image} />
+                <View style={S.itemOverlay}>
+                  <Text style={S.itemName} numberOfLines={1}>{item.name || catName(item.categoryId)}</Text>
+                </View>
+                {item.favorite === 1 && (
+                  <View style={S.favBadge}>
+                    <Ionicons name="heart" size={12} color={Colors.danger} />
+                  </View>
+                )}
+              </Pressable>
             )}
-          </Pressable>
-        )}
-        keyExtractor={(item) => item.id}
-        ListEmptyComponent={
-          <EmptyState
-            icon="👗"
-            title="衣橱空空"
-            action={{ label: "添加第一件", onPress: () => router.push("/closet/add") }}
+            keyExtractor={(item) => item.id}
+            ListEmptyComponent={
+              <EmptyState
+                icon="👗"
+                title="衣橱空空"
+                action={{ label: "添加第一件", onPress: () => router.push("/closet/add") }}
+              />
+            }
           />
-        }
-      />
+        </View>
+      </View>
 
       <Pressable style={S.fab} onPress={() => router.push("/closet/add")}>
         <Ionicons name="add" size={26} color={Colors.textInverse} />
@@ -142,28 +153,52 @@ const S = StyleSheet.create({
   headerTitle: { fontSize: 42, fontWeight: "800", color: Colors.textPrimary, letterSpacing: -1.5, lineHeight: 48 },
   headerSub: { fontSize: FontSize.base, color: Colors.textTertiary, marginTop: Spacing.xs },
 
-  catList: { maxHeight: 60, marginBottom: Spacing.md },
-  parentPill: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: Radius.full,
+  body: { flex: 1, flexDirection: "row" },
+
+  sidebar: {
+    width: SIDEBAR_WIDTH,
     backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    minHeight: TouchMin,
+    borderRightWidth: 1,
+    borderRightColor: Colors.border,
+  },
+  sidebarItem: {
+    height: 64,
     justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: Spacing.sm,
+    position: "relative",
   },
-  parentPillActive: {
+  sidebarItemActive: {
+    backgroundColor: Colors.bg,
+  },
+  sidebarIndicator: {
+    position: "absolute",
+    left: 0,
+    top: 14,
+    bottom: 14,
+    width: 3,
+    borderTopRightRadius: 2,
+    borderBottomRightRadius: 2,
     backgroundColor: Colors.accent,
-    borderColor: Colors.accent,
   },
-  parentText: { fontSize: FontSize.sm, fontWeight: "600", color: Colors.textSecondary },
-  parentTextActive: { color: Colors.textInverse },
+  sidebarText: {
+    fontSize: FontSize.sm,
+    fontWeight: "500",
+    color: Colors.textSecondary,
+    textAlign: "center",
+  },
+  sidebarTextActive: {
+    fontWeight: "700",
+    color: Colors.textPrimary,
+  },
+
+  content: { flex: 1 },
 
   filterTitleWrap: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: Spacing.xl,
+    paddingTop: Spacing.sm,
     marginBottom: Spacing.md,
     gap: 6,
   },
