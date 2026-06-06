@@ -64,14 +64,21 @@ export default function SettingsScreen() {
       <Text style={S.sectionTitle}>数据管理</Text>
       <View style={S.card}>
         <Row icon="🗑️" title="清空衣橱" danger onPress={() => {
-          Alert.alert("清空衣橱", "确定要删除所有衣物吗？此操作不可恢复", [
-            { text: "取消", style: "cancel" },
-            { text: "清空", style: "destructive", onPress: async () => {
-              const store = useClothingStore.getState();
-              for (const item of store.items) await store.deleteItem(item.id);
-              Alert.alert("完成", "已清空衣橱");
-            } },
-          ]);
+          if (typeof window !== "undefined" && window.confirm) {
+            if (window.confirm("确定要删除所有衣物数据吗？此操作不可恢复")) {
+              try {
+                localStorage.removeItem("@wardrobe/clothing");
+                localStorage.removeItem("@wardrobe/outfits");
+                localStorage.removeItem("@wardrobe/dailyLogs");
+                const store = useClothingStore.getState();
+                store.items = [];
+                store.loadClothing();
+                window.alert("已清空衣橱，请刷新页面");
+              } catch (e) {
+                window.alert("清空失败: " + (e as any).message);
+              }
+            }
+          }
         }} />
       </View>
 
