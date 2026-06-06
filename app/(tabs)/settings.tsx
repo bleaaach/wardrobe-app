@@ -1,14 +1,18 @@
-import { View, Text, ScrollView, Pressable, TextInput, StyleSheet, Alert } from "react-native";
-import { useEffect, useState } from "react";
+import { View, Text, ScrollView, Pressable, TextInput, StyleSheet, Alert, Platform } from "react-native";
+import { useEffect, useState, useRef } from "react";
 import { Ionicons } from "@expo/vector-icons";
-import * as FileSystem from "expo-file-system";
-import * as Sharing from "expo-sharing";
 import { getSetting, setSetting } from "../../src/db/database";
+import { useClothingStore } from "../../src/store/clothingStore";
+import { importClosetData } from "../../src/services/importCloset";
 import { Colors, Spacing, Radius, FontSize, TouchMin } from "../../src/design/tokens";
 
 export default function SettingsScreen() {
   const [syncUrl, setSyncUrl] = useState("http://8.162.26.192/sync");
   const [token, setToken] = useState("");
+  const [importing, setImporting] = useState(false);
+  const [importMsg, setImportMsg] = useState("");
+  const loadClothing = useClothingStore((s) => s.loadClothing);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     (async () => {
@@ -53,6 +57,58 @@ export default function SettingsScreen() {
         </View>
       </View>
 
+      {/* Import */}
+      <Text style={S.sectionTitle}>数据导入</Text>
+      <View style={S.card}>
+        <Pressable
+          style={S.importBtn}
+          onPress={() => {
+            if (Platform.OS === "web" && fileRef.current) {
+              fileRef.current.click();
+            } else {
+              Alert.alert("提示", "请在网页版使用此功能");
+            }
+          }}
+          disabled={importing}
+        >
+          <Ionicons name="cloud-download" size={20} color={importing ? Colors.textTertiary : Colors.accent} />
+          <Text style={[S.importText, importing && { color: Colors.textTertiary }]}>
+            {importing ? importMsg : "从备份文件导入 (.zip)"}
+          </Text>
+        </Pressable>
+        {Platform.OS === "web" && (
+          <>
+            {/* Hidden file input for web */}
+            <input
+              ref={fileRef as any}
+              type="file"
+              accept=".zip"
+              style={{ display: "none" }}
+              onChange={async (e: any) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                setImporting(true);
+                setImportMsg("正在读取文件...");
+                try {
+                  const buffer = await file.arrayBuffer();
+                  const result = await importClosetData(buffer, (p) => {
+                    setImportMsg(`导入衣物 ${p.current}/${p.total}`);
+                  });
+                  await loadClothing();
+                  setImportMsg(`✅ 完成！导入 ${result.clothing} 件衣物`);
+                  setImporting(false);
+                  Alert.alert("导入完成", `成功导入 ${result.clothing} 件衣物`);
+                } catch (err: any) {
+                  setImporting(false);
+                  setImportMsg("");
+                  Alert.alert("导入失败", err.message);
+                }
+              }}
+            />
+          </>
+        )}
+      </View>
+
       <Text style={styles.footer}>智能衣橱 v1.0</Text>
       <View style={{ height: 60 }} />
     </ScrollView>
@@ -75,4 +131,13 @@ const S = StyleSheet.create({
 
 const styles = StyleSheet.create({
   footer: { textAlign: "center", color: Colors.textTertiary, fontSize: FontSize.xs, marginTop: Spacing.xxxl },
+});
+
+// Extend S with new styles
+Object.assign(S, {
+  importBtn: {
+    flexDirection: "row" as const, alignItems: "center" as const, gap: 10,
+    padding: Spacing.lg, minHeight: TouchMin,
+  },
+  importText: { fontSize: FontSize.base, color: Colors.accent },
 });
