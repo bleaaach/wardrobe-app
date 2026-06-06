@@ -1,16 +1,18 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Clothing, Category, Outfit, DailyLog, DEFAULT_CATEGORIES } from "../types";
 
-// Placeholder for sqlite-based modules that import getDatabase
-export function getDatabase(): {
-  getAllAsync<T>(sql: string, params?: unknown[]): Promise<T[]>;
-  getFirstAsync<T>(sql: string, params?: unknown[]): Promise<T | null>;
-  runAsync(sql: string, ...params: unknown[]): Promise<unknown>;
-} {
-  throw new Error("SQLite not available in this build");
-}
+// Use direct localStorage for reliability (avoid AsyncStorage web compat issues)
+const storage = {
+  getItem(key: string): string | null {
+    try { return localStorage.getItem(key); } catch { return null; }
+  },
+  setItem(key: string, value: string): void {
+    try { localStorage.setItem(key, value); } catch {}
+  },
+  removeItem(key: string): void {
+    try { localStorage.removeItem(key); } catch {}
+  },
+};
 
-// ====== 通用 JSON 存储 ======
 const STORAGE_KEYS = {
   clothing: "@wardrobe/clothing",
   outfits: "@wardrobe/outfits",
@@ -19,27 +21,14 @@ const STORAGE_KEYS = {
   settings: "@wardrobe/settings",
 };
 
-let storageAvailable = true;
-
 async function getJson<T>(key: string, fallback: T): Promise<T> {
-  if (!storageAvailable) return fallback;
-  try {
-    const raw = await AsyncStorage.getItem(key);
-    if (!raw) return fallback;
-    return JSON.parse(raw);
-  } catch {
-    storageAvailable = false;
-    return fallback;
-  }
+  const raw = storage.getItem(key);
+  if (!raw) return fallback;
+  try { return JSON.parse(raw); } catch { return fallback; }
 }
 
 async function setJson<T>(key: string, value: T): Promise<void> {
-  if (!storageAvailable) return;
-  try {
-    await AsyncStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    storageAvailable = false;
-  }
+  storage.setItem(key, JSON.stringify(value));
 }
 
 // ====== 初始化 ======
