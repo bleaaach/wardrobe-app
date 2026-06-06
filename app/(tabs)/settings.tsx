@@ -129,6 +129,14 @@ export default function SettingsScreen() {
         </View>
       </View>
 
+      {/* Statistics Section */}
+      <View style={S.section}>
+        <Text style={S.sectionLabel}>统计</Text>
+        <View style={S.card}>
+          <Row icon="bar-chart-outline" title="统计信息" onPress={() => router.push("/settings/statistics")} />
+        </View>
+      </View>
+
       {/* Management Section */}
       <View style={S.section}>
         <Text style={S.sectionLabel}>管理</Text>
