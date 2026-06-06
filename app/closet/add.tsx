@@ -1,4 +1,4 @@
-import { View, Text, TextInput, Pressable, Image, ScrollView, StyleSheet, Alert } from "react-native";
+import { View, Text, TextInput, Pressable, Image, ScrollView, StyleSheet, Alert, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import * as ImagePicker from "expo-image-picker";
@@ -6,6 +6,8 @@ import { useClothingStore } from "../../src/store/clothingStore";
 import { ModalHandle } from "../../src/components/ui/ModalHandle";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors, Spacing, Radius, FontSize, TouchMin, PressedOpacity } from "../../src/design/tokens";
+
+const BG_API = "http://8.162.26.192/sync/upload/remove-bg";
 
 const SEASONS = ["🌸春", "☀️夏", "🍂秋", "❄️冬"];
 
@@ -18,6 +20,8 @@ export default function AddClothingScreen() {
   const [catId, setCatId] = useState(categories[0]?.id || "");
   const [season, setSeason] = useState("");
   const [saving, setSaving] = useState(false);
+  const [removingBg, setRemovingBg] = useState(false);
+  const [bgDone, setBgDone] = useState(false);
 
   const pickImage = async (useCamera: boolean) => {
     const result = useCamera
@@ -62,6 +66,40 @@ export default function AddClothingScreen() {
 
       {image && (
         <>
+          {!bgDone && (
+            <Pressable
+              style={({pressed})=>[S.bgBtn, pressed&&S.pressed]}
+              onPress={async () => {
+                setRemovingBg(true);
+                try {
+                  // Convert image URI to base64
+                  const blob = await fetch(image).then(r => r.blob());
+                  const reader = new FileReader();
+                  const base64: string = await new Promise((resolve) => {
+                    reader.onloadend = () => resolve(reader.result as string);
+                    reader.readAsDataURL(blob);
+                  });
+                  const res = await fetch(BG_API, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ data: base64 }),
+                  });
+                  const json = await res.json();
+                  if (json.data) { setImage(json.data); setBgDone(true); }
+                  else throw new Error(json.error || "Failed");
+                } catch (e: any) {
+                  Alert.alert("抠图失败", e.message);
+                } finally {
+                  setRemovingBg(false);
+                }
+              }}
+              disabled={removingBg}
+            >
+              {removingBg ? <ActivityIndicator size="small" color={Colors.accent} /> : <Ionicons name="cut-outline" size={20} color={Colors.accent} />}
+              <Text style={S.bgText}>{removingBg ? "抠图中..." : "一键抠图"}</Text>
+            </Pressable>
+          )}
+
           <TextInput style={S.input} value={name} onChangeText={setName} placeholder="名称（选填）" placeholderTextColor={Colors.textTertiary} />
 
           <Text style={S.label}>分类</Text>
@@ -118,4 +156,6 @@ const S = StyleSheet.create({
   saveBtn: { backgroundColor: Colors.accent, borderRadius: Radius.xl, paddingVertical: 16, alignItems: "center", marginTop: Spacing.xxxl, minHeight: TouchMin + 8, justifyContent: "center" },
   saveBtnDisabled: { opacity: 0.45 },
   saveText: { color: Colors.textInverse, fontSize: FontSize.md, fontWeight: "600" },
+  bgBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 14, backgroundColor: Colors.accentLight, borderRadius: Radius.lg, marginBottom: Spacing.lg },
+  bgText: { color: Colors.accent, fontSize: FontSize.base, fontWeight: "600" },
 });
