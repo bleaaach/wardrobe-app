@@ -1,7 +1,7 @@
 import { View, Text, Pressable, StyleSheet } from "react-native";
-import { AsyncImage } from "../../src/components/AsyncImage";
+import { AsyncImage } from "./AsyncImage";
 import { Ionicons } from "@expo/vector-icons";
-import { Colors, Spacing, Radius, FontSize, TouchMin } from "../design/tokens";
+import { Colors, Spacing, Radius, FontSize, TouchMin, PressedOpacity } from "../design/tokens";
 
 interface Props {
   imageUri: string;
@@ -15,8 +15,8 @@ interface Props {
 
 export function ClothingCard({ imageUri, name, category, selected, onPress, favorite, onFavorite }: Props) {
   return (
-    <Pressable style={[S.card, selected && S.selected]} onPress={onPress}>
-      <Image source={{ uri: imageUri }} style={S.image} />
+    <Pressable style={({ pressed }) => [S.card, selected && S.selected, pressed && S.pressed]} onPress={onPress}>
+      <AsyncImage uri={imageUri} style={S.image} />
       {name ? <Text style={S.name} numberOfLines={1}>{name}</Text> : null}
       {category ? <Text style={S.cat}>{category}</Text> : null}
       {selected !== undefined && (
@@ -36,6 +36,7 @@ export function ClothingCard({ imageUri, name, category, selected, onPress, favo
 const S = StyleSheet.create({
   card: { backgroundColor: Colors.surface, borderRadius: Radius.md, overflow: "hidden", minHeight: TouchMin },
   selected: { borderWidth: 2, borderColor: Colors.accent, borderRadius: Radius.md },
+  pressed: { opacity: PressedOpacity },
   image: { width: "100%", aspectRatio: 0.75, backgroundColor: Colors.border },
   name: { fontSize: FontSize.xs, color: Colors.textPrimary, paddingHorizontal: 6, paddingTop: 6 },
   cat: { fontSize: FontSize.xs, color: Colors.textTertiary, paddingHorizontal: 6, paddingBottom: 6 },

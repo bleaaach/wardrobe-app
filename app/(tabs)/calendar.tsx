@@ -1,7 +1,8 @@
 import { View, Text, ScrollView, Pressable, StyleSheet } from "react-native";
 import { useState } from "react";
+import { Header } from "../../src/components/ui/Header";
 import { Ionicons } from "@expo/vector-icons";
-import { Colors, Spacing, Radius, FontSize } from "../../src/design/tokens";
+import { Colors, Spacing, Radius, FontSize, PressedOpacity } from "../../src/design/tokens";
 
 export default function CalendarScreen() {
   const date = new Date();
@@ -16,10 +17,16 @@ export default function CalendarScreen() {
 
   return (
     <ScrollView style={S.container} contentContainerStyle={S.content}>
+      <Header title="穿搭日历" />
+
       <View style={S.nav}>
-        <Pressable onPress={() => setMonth((m) => (m === 0 ? 11 : m - 1))}><Ionicons name="chevron-back" size={20} color={Colors.textSecondary} /></Pressable>
+        <Pressable onPress={() => setMonth((m) => (m === 0 ? 11 : m - 1))} hitSlop={8}>
+          <Ionicons name="chevron-back" size={22} color={Colors.textSecondary} />
+        </Pressable>
         <Text style={S.month}>{year}年 {months[month]}</Text>
-        <Pressable onPress={() => setMonth((m) => (m === 11 ? 0 : m + 1))}><Ionicons name="chevron-forward" size={20} color={Colors.textSecondary} /></Pressable>
+        <Pressable onPress={() => setMonth((m) => (m === 11 ? 0 : m + 1))} hitSlop={8}>
+          <Ionicons name="chevron-forward" size={22} color={Colors.textSecondary} />
+        </Pressable>
       </View>
 
       <View style={S.weekRow}>{weeks.map((d) => <Text key={d} style={S.weekDay}>{d}</Text>)}</View>
@@ -50,15 +57,15 @@ export default function CalendarScreen() {
 
 const S = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bg },
-  content: { padding: Spacing.xl },
+  content: { paddingHorizontal: Spacing.xl, paddingBottom: Spacing.xxxl },
   nav: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: Spacing.xxl },
   month: { fontSize: FontSize.lg, fontWeight: "600", color: Colors.textPrimary },
   weekRow: { flexDirection: "row", marginBottom: Spacing.sm },
-  weekDay: { flex: 1, textAlign: "center", fontSize: FontSize.xs, color: Colors.textTertiary, paddingVertical: Spacing.sm },
+  weekDay: { flex: 1, textAlign: "center", fontSize: FontSize.xs, color: Colors.textTertiary, paddingVertical: Spacing.sm, fontWeight: "500" },
   grid: { flexDirection: "row", flexWrap: "wrap" },
-  day: { width: "14.28%", aspectRatio: 1, justifyContent: "center", alignItems: "center" },
-  daySel: { backgroundColor: Colors.accent, borderRadius: Radius.full },
-  dayToday: { backgroundColor: Colors.accentLight, borderRadius: Radius.full },
+  day: { width: "14.28%", aspectRatio: 1, justifyContent: "center", alignItems: "center", borderRadius: Radius.full },
+  daySel: { backgroundColor: Colors.accent },
+  dayToday: { backgroundColor: Colors.accentLight },
   dayText: { fontSize: FontSize.base, color: Colors.textPrimary },
   dayTextSel: { color: Colors.textInverse, fontWeight: "600" },
   dayTextToday: { color: Colors.accent, fontWeight: "600" },

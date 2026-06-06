@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { getOutfits, deleteOutfit, getAllClothing } from "../../src/db/database";
 import { Outfit, Clothing } from "../../src/types";
 import { Ionicons } from "@expo/vector-icons";
+import { Colors, Spacing, Radius, FontSize, TouchMin, PressedOpacity } from "../../src/design/tokens";
 
 export default function OutfitDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -24,44 +25,49 @@ export default function OutfitDetailScreen() {
     setItems(allClothing.filter((c) => ids.includes(c.id)));
   };
 
-  if (!outfit) return <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}><Text style={{ color: "#9ca3af" }}>搭配不存在</Text></View>;
+  if (!outfit) return <View style={S.centered}><Text style={{ color: Colors.textTertiary }}>搭配不存在</Text></View>;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.name}>{outfit.name || "未命名搭配"}</Text>
-      <Text style={styles.date}>{new Date(outfit.createdAt).toLocaleDateString("zh-CN")}</Text>
-      <Text style={styles.section}>包含衣物 ({items.length}件)</Text>
-      <View style={styles.grid}>
+    <ScrollView style={S.container} contentContainerStyle={S.content}>
+      <Text style={S.name}>{outfit.name || "未命名搭配"}</Text>
+      <Text style={S.date}>{new Date(outfit.createdAt).toLocaleDateString("zh-CN")}</Text>
+      <Text style={S.section}>包含衣物 ({items.length}件)</Text>
+      <View style={S.grid}>
         {items.map((item) => (
-          <Pressable key={item.id} style={styles.item} onPress={() => router.push(`/closet/${item.id}`)}>
-            <AsyncImage uri={item.imageUri} style={styles.itemImage} />
-            <Text style={styles.itemName} numberOfLines={1}>{item.name || "未命名"}</Text>
+          <Pressable key={item.id} style={({ pressed }) => [S.item, pressed && S.pressed]} onPress={() => router.push(`/closet/${item.id}`)}>
+            <AsyncImage uri={item.imageUri} style={S.itemImage} />
+            <Text style={S.itemName} numberOfLines={1}>{item.name || "未命名"}</Text>
           </Pressable>
         ))}
       </View>
-      <Pressable style={styles.deleteBtn} onPress={() => {
-        Alert.alert("删除搭配", "确定要删除吗？", [
-          { text: "取消", style: "cancel" },
-          { text: "删除", style: "destructive", onPress: async () => { await deleteOutfit(id!); router.back(); } },
-        ]);
-      }}>
-        <Ionicons name="trash-outline" size={20} color="#ef4444" />
-        <Text style={styles.deleteText}>删除搭配</Text>
+      <Pressable
+        style={({ pressed }) => [S.deleteBtn, pressed && S.pressed]}
+        onPress={() => {
+          Alert.alert("删除搭配", "确定要删除吗？", [
+            { text: "取消", style: "cancel" },
+            { text: "删除", style: "destructive", onPress: async () => { await deleteOutfit(id!); router.back(); } },
+          ]);
+        }}
+      >
+        <Ionicons name="trash-outline" size={20} color={Colors.danger} />
+        <Text style={S.deleteText}>删除搭配</Text>
       </Pressable>
     </ScrollView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f3f4f6" },
-  content: { padding: 16, paddingBottom: 40 },
-  name: { fontSize: 24, fontWeight: "700", color: "#111827" },
-  date: { fontSize: 13, color: "#9ca3af", marginTop: 4 },
-  section: { fontSize: 15, fontWeight: "600", color: "#374151", marginTop: 20, marginBottom: 8 },
+const S = StyleSheet.create({
+  container: { flex: 1, backgroundColor: Colors.bg },
+  content: { padding: Spacing.xl, paddingBottom: 40 },
+  centered: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: Colors.bg },
+  name: { fontSize: FontSize.xl, fontWeight: "700", color: Colors.textPrimary },
+  date: { fontSize: FontSize.sm, color: Colors.textTertiary, marginTop: 4 },
+  section: { fontSize: FontSize.base, fontWeight: "600", color: Colors.textPrimary, marginTop: Spacing.xxl, marginBottom: Spacing.md },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  item: { width: "31%", backgroundColor: "#fff", borderRadius: 12, overflow: "hidden" },
-  itemImage: { width: "100%", aspectRatio: 0.8, backgroundColor: "#f3f4f6" },
-  itemName: { fontSize: 11, color: "#6b7280", padding: 6, textAlign: "center" },
-  deleteBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 24, padding: 14, borderRadius: 12, backgroundColor: "#fff" },
-  deleteText: { color: "#ef4444", fontSize: 15 },
+  item: { width: "31%", backgroundColor: Colors.surface, borderRadius: Radius.md, overflow: "hidden" },
+  pressed: { opacity: PressedOpacity },
+  itemImage: { width: "100%", aspectRatio: 0.8, backgroundColor: Colors.border },
+  itemName: { fontSize: FontSize.xs, color: Colors.textSecondary, padding: 6, textAlign: "center" },
+  deleteBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: Spacing.xxxl, padding: Spacing.lg, borderRadius: Radius.lg, backgroundColor: Colors.surface, minHeight: TouchMin },
+  deleteText: { color: Colors.danger, fontSize: FontSize.base, fontWeight: "500" },
 });

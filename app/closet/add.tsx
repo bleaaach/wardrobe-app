@@ -3,8 +3,9 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import * as ImagePicker from "expo-image-picker";
 import { useClothingStore } from "../../src/store/clothingStore";
+import { ModalHandle } from "../../src/components/ui/ModalHandle";
 import { Ionicons } from "@expo/vector-icons";
-import { Colors, Spacing, Radius, FontSize, TouchMin } from "../../src/design/tokens";
+import { Colors, Spacing, Radius, FontSize, TouchMin, PressedOpacity } from "../../src/design/tokens";
 
 const SEASONS = ["🌸春", "☀️夏", "🍂秋", "❄️冬"];
 
@@ -34,6 +35,8 @@ export default function AddClothingScreen() {
 
   return (
     <ScrollView style={S.container} contentContainerStyle={S.content} keyboardShouldPersistTaps="handled">
+      <ModalHandle />
+
       {/* Image Picker */}
       <Pressable style={S.imageArea} onPress={() => pickImage(false)}>
         {image ? (
@@ -48,10 +51,10 @@ export default function AddClothingScreen() {
 
       {!image && (
         <View style={S.photoBtns}>
-          <Pressable style={S.photoBtn} onPress={() => pickImage(true)}>
+          <Pressable style={({ pressed }) => [S.photoBtn, pressed && S.pressed]} onPress={() => pickImage(true)}>
             <Ionicons name="camera" size={20} color={Colors.accent} /><Text style={S.photoBtnText}>拍照</Text>
           </Pressable>
-          <Pressable style={S.photoBtn} onPress={() => pickImage(false)}>
+          <Pressable style={({ pressed }) => [S.photoBtn, pressed && S.pressed]} onPress={() => pickImage(false)}>
             <Ionicons name="images" size={20} color={Colors.accent} /><Text style={S.photoBtnText}>相册</Text>
           </Pressable>
         </View>
@@ -59,10 +62,8 @@ export default function AddClothingScreen() {
 
       {image && (
         <>
-          {/* Name - minimal input */}
           <TextInput style={S.input} value={name} onChangeText={setName} placeholder="名称（选填）" placeholderTextColor={Colors.textTertiary} />
 
-          {/* Category Pills */}
           <Text style={S.label}>分类</Text>
           <View style={S.chips}>
             {categories.map((cat) => (
@@ -72,7 +73,6 @@ export default function AddClothingScreen() {
             ))}
           </View>
 
-          {/* Season */}
           <Text style={S.label}>季节</Text>
           <View style={S.chips}>
             {SEASONS.map((s) => {
@@ -86,8 +86,7 @@ export default function AddClothingScreen() {
             })}
           </View>
 
-          {/* Save Button */}
-          <Pressable style={[S.saveBtn, saving && S.saveBtnDisabled]} onPress={save} disabled={saving}>
+          <Pressable style={({ pressed }) => [S.saveBtn, saving && S.saveBtnDisabled, pressed && !saving && S.pressed]} onPress={save} disabled={saving}>
             <Text style={S.saveText}>{saving ? "保存中..." : "保存"}</Text>
           </Pressable>
         </>
@@ -101,21 +100,22 @@ export default function AddClothingScreen() {
 const S = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bg },
   content: { padding: Spacing.xl },
-  imageArea: { width: "100%", height: 300, backgroundColor: Colors.surface, borderRadius: Radius.lg, overflow: "hidden", marginBottom: Spacing.lg },
+  imageArea: { width: "100%", height: 320, backgroundColor: Colors.surface, borderRadius: Radius.lg, overflow: "hidden", marginBottom: Spacing.lg },
   image: { width: "100%", height: "100%", resizeMode: "cover" },
   imagePlaceholder: { flex: 1, justifyContent: "center", alignItems: "center" },
   imageHint: { color: Colors.textTertiary, fontSize: FontSize.base, marginTop: Spacing.sm },
   photoBtns: { flexDirection: "row", justifyContent: "center", gap: Spacing.xl, marginBottom: Spacing.xl },
-  photoBtn: { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 12, paddingHorizontal: 20, backgroundColor: Colors.surface, borderRadius: Radius.full },
+  photoBtn: { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 12, paddingHorizontal: 20, backgroundColor: Colors.surface, borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.divider },
   photoBtnText: { color: Colors.accent, fontSize: FontSize.base, fontWeight: "600" },
+  pressed: { opacity: PressedOpacity },
   input: { fontSize: FontSize.lg, paddingVertical: 14, paddingHorizontal: 0, borderBottomWidth: 1, borderBottomColor: Colors.divider, marginBottom: Spacing.xl, color: Colors.textPrimary },
   label: { fontSize: FontSize.sm, fontWeight: "600", color: Colors.textSecondary, marginBottom: Spacing.sm, marginTop: Spacing.lg },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.sm },
-  chip: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: Radius.full, backgroundColor: Colors.surface, minHeight: TouchMin, justifyContent: "center" },
-  chipActive: { backgroundColor: Colors.accent },
+  chip: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: Radius.full, backgroundColor: Colors.surface, minHeight: TouchMin, justifyContent: "center", borderWidth: 1, borderColor: Colors.divider },
+  chipActive: { backgroundColor: Colors.accent, borderColor: Colors.accent },
   chipText: { fontSize: FontSize.sm, color: Colors.textSecondary },
   chipActiveText: { color: Colors.textInverse, fontWeight: "600" },
   saveBtn: { backgroundColor: Colors.accent, borderRadius: Radius.xl, paddingVertical: 16, alignItems: "center", marginTop: Spacing.xxxl, minHeight: TouchMin + 8, justifyContent: "center" },
-  saveBtnDisabled: { opacity: 0.6 },
+  saveBtnDisabled: { opacity: 0.45 },
   saveText: { color: Colors.textInverse, fontSize: FontSize.md, fontWeight: "600" },
 });

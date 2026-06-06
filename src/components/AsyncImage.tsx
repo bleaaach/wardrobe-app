@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Image, View, Text } from "react-native";
+import { Image, View, ActivityIndicator, Text } from "react-native";
+import { Colors } from "../design/tokens";
 
 const urlCache = new Map<string, string>();
 
@@ -49,7 +50,19 @@ export function AsyncImage({ uri, style }: { uri: string; style?: any }) {
     }
   }, [uri]);
 
-  if (loading) return <View style={[{ backgroundColor: "#f0eeec" }, style]} />;
-  if (!src) return <View style={[{ backgroundColor: "#f0eeec", justifyContent: "center", alignItems: "center" }, style]}><Text style={{ fontSize: 10, color: "#ccc" }}>📷</Text></View>;
+  if (loading) {
+    return (
+      <View style={[{ backgroundColor: Colors.divider, justifyContent: "center", alignItems: "center" }, style]}>
+        <ActivityIndicator size="small" color={Colors.textTertiary} />
+      </View>
+    );
+  }
+  if (!src) {
+    return (
+      <View style={[{ backgroundColor: Colors.divider, justifyContent: "center", alignItems: "center" }, style]}>
+        <Text style={{ fontSize: 10, color: Colors.textTertiary }}>📷</Text>
+      </View>
+    );
+  }
   return <Image source={{ uri: src }} style={style} resizeMode="cover" />;
 }

@@ -1,10 +1,13 @@
 import { View, Text, ScrollView, Pressable, TextInput, StyleSheet, Alert, Platform } from "react-native";
 import { useEffect, useState, useRef } from "react";
+import * as FileSystem from "expo-file-system";
+import * as Sharing from "expo-sharing";
+import { Header } from "../../src/components/ui/Header";
 import { Ionicons } from "@expo/vector-icons";
 import { getSetting, setSetting } from "../../src/db/database";
 import { useClothingStore } from "../../src/store/clothingStore";
 import { importClosetData } from "../../src/services/importCloset";
-import { Colors, Spacing, Radius, FontSize, TouchMin } from "../../src/design/tokens";
+import { Colors, Spacing, Radius, FontSize, TouchMin, PressedOpacity } from "../../src/design/tokens";
 
 export default function SettingsScreen() {
   const [syncUrl, setSyncUrl] = useState("http://8.162.26.192/sync");
@@ -23,22 +26,23 @@ export default function SettingsScreen() {
     })();
   }, []);
 
-  const Row = ({ icon, title, onPress }: { icon: string; title: string; onPress?: () => void }) => (
-    <Pressable style={S.row} onPress={onPress}>
+  const Row = ({ icon, title, onPress, danger }: { icon: string; title: string; onPress?: () => void; danger?: boolean }) => (
+    <Pressable style={({ pressed }) => [S.row, pressed && S.rowPressed]} onPress={onPress}>
       <Text style={S.rowIcon}>{icon}</Text>
-      <Text style={S.rowText}>{title}</Text>
+      <Text style={[S.rowText, danger && { color: Colors.danger }]}>{title}</Text>
       <Ionicons name="chevron-forward" size={16} color={Colors.textTertiary} />
     </Pressable>
   );
 
   return (
     <ScrollView style={S.container} contentContainerStyle={S.content}>
-      <Text style={S.title}>设置</Text>
+      <Header title="设置" />
 
+      <Text style={S.sectionTitle}>数据</Text>
       <View style={S.card}>
         <Row icon="📤" title="导出备份" onPress={async () => {
           try {
-            const dbPath = FileSystem.documentDirectory + "SQLite/wardrobe.db";
+            const dbPath = (FileSystem as any).documentDirectory + "SQLite/wardrobe.db";
             await Sharing.shareAsync(dbPath, { dialogTitle: "保存备份" });
           } catch { Alert.alert("提示", "备份功能开发中"); }
         }} />
@@ -57,10 +61,9 @@ export default function SettingsScreen() {
         </View>
       </View>
 
-      {/* Import */}
       <Text style={S.sectionTitle}>数据管理</Text>
       <View style={S.card}>
-        <Pressable style={S.importBtn} onPress={() => {
+        <Row icon="🗑️" title="清空衣橱" danger onPress={() => {
           Alert.alert("清空衣橱", "确定要删除所有衣物吗？此操作不可恢复", [
             { text: "取消", style: "cancel" },
             { text: "清空", style: "destructive", onPress: async () => {
@@ -69,16 +72,13 @@ export default function SettingsScreen() {
               Alert.alert("完成", "已清空衣橱");
             } },
           ]);
-        }}>
-          <Ionicons name="trash" size={20} color={Colors.danger} />
-          <Text style={[S.importText, { color: Colors.danger }]}>清空衣橱</Text>
-        </Pressable>
+        }} />
       </View>
 
       <Text style={S.sectionTitle}>数据导入</Text>
       <View style={S.card}>
         <Pressable
-          style={S.importBtn}
+          style={({ pressed }) => [S.importBtn, pressed && S.importBtnPressed]}
           onPress={() => {
             if (Platform.OS === "web" && fileRef.current) {
               fileRef.current.click();
@@ -94,39 +94,36 @@ export default function SettingsScreen() {
           </Text>
         </Pressable>
         {Platform.OS === "web" && (
-          <>
-            {/* Hidden file input for web */}
-            <input
-              ref={fileRef as any}
-              type="file"
-              accept=".zip"
-              style={{ display: "none" }}
-              onChange={async (e: any) => {
-                const file = e.target.files?.[0];
-                if (!file) return;
-                setImporting(true);
-                setImportMsg("正在读取文件...");
-                try {
-                  const buffer = await file.arrayBuffer();
-                  const result = await importClosetData(buffer, (p) => {
-                    setImportMsg(`导入衣物 ${p.current}/${p.total}`);
-                  });
-                  await loadClothing();
-                  setImportMsg(`✅ 完成！导入 ${result.clothing} 件衣物`);
-                  setImporting(false);
-                  Alert.alert("导入完成", `成功导入 ${result.clothing} 件衣物`);
-                } catch (err: any) {
-                  setImporting(false);
-                  setImportMsg("");
-                  Alert.alert("导入失败", err.message);
-                }
-              }}
-            />
-          </>
+          <input
+            ref={fileRef as any}
+            type="file"
+            accept=".zip"
+            style={{ display: "none" }}
+            onChange={async (e: any) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              setImporting(true);
+              setImportMsg("正在读取文件...");
+              try {
+                const buffer = await file.arrayBuffer();
+                const result = await importClosetData(buffer, (p) => {
+                  setImportMsg(`导入衣物 ${p.current}/${p.total}`);
+                });
+                await loadClothing();
+                setImportMsg(`✅ 完成！导入 ${result.clothing} 件衣物`);
+                setImporting(false);
+                Alert.alert("导入完成", `成功导入 ${result.clothing} 件衣物`);
+              } catch (err: any) {
+                setImporting(false);
+                setImportMsg("");
+                Alert.alert("导入失败", err.message);
+              }
+            }}
+          />
         )}
       </View>
 
-      <Text style={styles.footer}>智能衣橱 v1.0</Text>
+      <Text style={S.footer}>智能衣橱 v1.0</Text>
       <View style={{ height: 60 }} />
     </ScrollView>
   );
@@ -135,26 +132,17 @@ export default function SettingsScreen() {
 const S = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bg },
   content: { paddingHorizontal: Spacing.xl },
-  title: { fontSize: FontSize.xl, fontWeight: "700", color: Colors.textPrimary, marginTop: 60, marginBottom: Spacing.xxl },
   card: { backgroundColor: Colors.surface, borderRadius: Radius.lg, marginBottom: Spacing.xl, overflow: "hidden" },
   row: { flexDirection: "row", alignItems: "center", padding: Spacing.lg, borderBottomWidth: 1, borderColor: Colors.divider, minHeight: TouchMin },
+  rowPressed: { backgroundColor: Colors.surfaceHover },
   rowIcon: { fontSize: 20, marginRight: Spacing.md },
   rowText: { flex: 1, fontSize: FontSize.base, color: Colors.textPrimary },
   sectionTitle: { fontSize: FontSize.sm, fontWeight: "600", color: Colors.textSecondary, marginBottom: Spacing.sm, paddingLeft: 4 },
   inputRow: { padding: Spacing.lg, borderBottomWidth: 1, borderColor: Colors.divider },
   label: { fontSize: FontSize.sm, color: Colors.textSecondary, marginBottom: 6 },
   input: { backgroundColor: Colors.bg, borderRadius: Radius.sm, padding: 12, fontSize: FontSize.base, color: Colors.textPrimary },
-});
-
-const styles = StyleSheet.create({
-  footer: { textAlign: "center", color: Colors.textTertiary, fontSize: FontSize.xs, marginTop: Spacing.xxxl },
-});
-
-// Extend S with new styles
-Object.assign(S, {
-  importBtn: {
-    flexDirection: "row" as const, alignItems: "center" as const, gap: 10,
-    padding: Spacing.lg, minHeight: TouchMin,
-  },
+  importBtn: { flexDirection: "row", alignItems: "center", gap: 10, padding: Spacing.lg, minHeight: TouchMin },
+  importBtnPressed: { backgroundColor: Colors.surfaceHover },
   importText: { fontSize: FontSize.base, color: Colors.accent },
+  footer: { textAlign: "center", color: Colors.textTertiary, fontSize: FontSize.xs, marginTop: Spacing.xxxl },
 });

@@ -1,25 +1,22 @@
 import { View, Text, ScrollView, Pressable, StyleSheet } from "react-native";
 import { AsyncImage } from "../../src/components/AsyncImage";
+import { Header } from "../../src/components/ui/Header";
 import { useRouter } from "expo-router";
 import { useClothingStore } from "../../src/store/clothingStore";
 import { Ionicons } from "@expo/vector-icons";
-import { Colors, Spacing, Radius, FontSize, TouchMin } from "../../src/design/tokens";
+import { Colors, Spacing, Radius, FontSize, TouchMin, PressedOpacity, Shadows } from "../../src/design/tokens";
 
 export default function HomeScreen() {
   const router = useRouter();
   const items = useClothingStore((s) => s.items);
   const today = new Date().toLocaleDateString("zh-CN", { month: "long", day: "numeric", weekday: "short" });
 
-  const favorites = items.filter((i) => i.favorite === 1).slice(0, 4);
+  const favorites = items.filter((i) => i.favorite === 1).slice(0, 6);
   const recentItems = items.slice(0, 8);
 
   return (
     <ScrollView style={S.container} showsVerticalScrollIndicator={false}>
-      {/* Greeting */}
-      <View style={S.header}>
-        <Text style={S.greeting}>衣橱</Text>
-        <Text style={S.date}>{today}</Text>
-      </View>
+      <Header title="衣橱" subtitle={today} />
 
       {/* If empty */}
       {items.length === 0 ? (
@@ -36,17 +33,17 @@ export default function HomeScreen() {
         <>
           {/* Quick Stats */}
           <View style={S.statsRow}>
-            <Pressable style={S.statCard} onPress={() => router.push("/closet")}>
+            <Pressable style={({ pressed }) => [S.statCard, pressed && S.statPressed]} onPress={() => router.push("/closet")}>
               <Text style={S.statNum}>{items.length}</Text>
               <Text style={S.statLabel}>件衣物</Text>
             </Pressable>
-            <Pressable style={S.statCard} onPress={() => router.push("/outfits")}>
-              <Ionicons name="layers" size={24} color={Colors.accent} />
-              <Text style={S.statLabel}>搭配</Text>
+            <Pressable style={({ pressed }) => [S.statCard, pressed && S.statPressed]} onPress={() => router.push("/outfits")}>
+              <Text style={S.statNum}>搭配</Text>
+              <Text style={S.statLabel}> outfits</Text>
             </Pressable>
-            <Pressable style={S.statCard} onPress={() => router.push("/calendar")}>
-              <Ionicons name="calendar" size={24} color={Colors.accent} />
-              <Text style={S.statLabel}>日历</Text>
+            <Pressable style={({ pressed }) => [S.statCard, pressed && S.statPressed]} onPress={() => router.push("/calendar")}>
+              <Text style={S.statNum}>日历</Text>
+              <Text style={S.statLabel}>记录</Text>
             </Pressable>
           </View>
 
@@ -54,9 +51,9 @@ export default function HomeScreen() {
           {favorites.length > 0 && (
             <View style={S.section}>
               <Text style={S.sectionTitle}>收藏</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={S.hScroll}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={S.hScroll} contentContainerStyle={{ paddingRight: Spacing.xl }}>
                 {favorites.map((item) => (
-                  <Pressable key={item.id} style={S.favItem} onPress={() => router.push(`/closet/${item.id}`)}>
+                  <Pressable key={item.id} style={({ pressed }) => [S.favItem, pressed && S.favPressed]} onPress={() => router.push(`/closet/${item.id}`)}>
                     <AsyncImage uri={item.imageUri} style={S.favImage} />
                   </Pressable>
                 ))}
@@ -68,13 +65,13 @@ export default function HomeScreen() {
           <View style={S.section}>
             <View style={S.sectionHeader}>
               <Text style={S.sectionTitle}>全部衣物</Text>
-              <Pressable onPress={() => router.push("/closet")}>
+              <Pressable onPress={() => router.push("/closet")} hitSlop={8}>
                 <Text style={S.seeAll}>查看全部</Text>
               </Pressable>
             </View>
             <View style={S.grid}>
               {recentItems.map((item) => (
-                <Pressable key={item.id} style={S.gridItem} onPress={() => router.push(`/closet/${item.id}`)}>
+                <Pressable key={item.id} style={({ pressed }) => [S.gridItem, pressed && S.gridPressed]} onPress={() => router.push(`/closet/${item.id}`)}>
                   <AsyncImage uri={item.imageUri} style={S.gridImage} />
                 </Pressable>
               ))}
@@ -90,9 +87,6 @@ export default function HomeScreen() {
 
 const S = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bg },
-  header: { paddingTop: 60, paddingHorizontal: Spacing.xl, paddingBottom: Spacing.lg },
-  greeting: { fontSize: FontSize.xxl, fontWeight: "700", color: Colors.textPrimary, letterSpacing: -0.5 },
-  date: { fontSize: FontSize.base, color: Colors.textSecondary, marginTop: 4 },
 
   // Empty state
   emptyState: { alignItems: "center", paddingTop: 60, paddingHorizontal: Spacing.xxxl },
@@ -104,8 +98,9 @@ const S = StyleSheet.create({
 
   // Stats
   statsRow: { flexDirection: "row", gap: Spacing.md, paddingHorizontal: Spacing.xl, marginBottom: Spacing.xxl },
-  statCard: { flex: 1, backgroundColor: Colors.surface, borderRadius: Radius.lg, paddingVertical: Spacing.lg, alignItems: "center", minHeight: TouchMin * 2 },
-  statNum: { fontSize: FontSize.xxl, fontWeight: "700", color: Colors.accent },
+  statCard: { flex: 1, backgroundColor: Colors.surface, borderRadius: Radius.lg, paddingVertical: Spacing.lg, alignItems: "center", minHeight: TouchMin * 2, ...Shadows.sm },
+  statPressed: { opacity: PressedOpacity },
+  statNum: { fontSize: FontSize.xl, fontWeight: "700", color: Colors.accent },
   statLabel: { fontSize: FontSize.sm, color: Colors.textSecondary, marginTop: 4 },
 
   // Section
@@ -116,11 +111,13 @@ const S = StyleSheet.create({
 
   // Favorites
   hScroll: { paddingLeft: Spacing.xl },
-  favItem: { marginRight: Spacing.md, borderRadius: Radius.lg, overflow: "hidden" },
-  favImage: { width: 80, height: 100, backgroundColor: Colors.border, borderRadius: Radius.lg },
+  favItem: { marginRight: Spacing.md, borderRadius: Radius.lg, overflow: "hidden", ...Shadows.sm },
+  favPressed: { opacity: PressedOpacity },
+  favImage: { width: 90, height: 110, backgroundColor: Colors.border, borderRadius: Radius.lg },
 
   // Grid
   grid: { flexDirection: "row", flexWrap: "wrap", paddingHorizontal: Spacing.md },
   gridItem: { width: "25%", padding: 4 },
+  gridPressed: { opacity: PressedOpacity },
   gridImage: { width: "100%", aspectRatio: 0.8, backgroundColor: Colors.border, borderRadius: Radius.md },
 });

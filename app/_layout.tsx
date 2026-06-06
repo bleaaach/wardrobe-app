@@ -1,7 +1,7 @@
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
-import { View, Text } from "react-native";
+import { View, Text, ActivityIndicator } from "react-native";
 import { useClothingStore } from "../src/store/clothingStore";
 import { Colors, FontSize } from "../src/design/tokens";
 
@@ -18,7 +18,8 @@ export default function RootLayout() {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: Colors.bg }}>
         <Text style={{ fontSize: 40 }}>👗</Text>
-        <Text style={{ marginTop: 12, color: Colors.textSecondary, fontSize: FontSize.base }}>加载中...</Text>
+        <ActivityIndicator style={{ marginTop: 16 }} size="small" color={Colors.textTertiary} />
+        <Text style={{ marginTop: 8, color: Colors.textSecondary, fontSize: FontSize.sm }}>加载中...</Text>
       </View>
     );
   }

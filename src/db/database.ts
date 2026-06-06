@@ -1,6 +1,15 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Clothing, Category, Outfit, DailyLog, DEFAULT_CATEGORIES } from "../types";
 
+// Placeholder for sqlite-based modules that import getDatabase
+export function getDatabase(): {
+  getAllAsync<T>(sql: string, params?: unknown[]): Promise<T[]>;
+  getFirstAsync<T>(sql: string, params?: unknown[]): Promise<T | null>;
+  runAsync(sql: string, ...params: unknown[]): Promise<unknown>;
+} {
+  throw new Error("SQLite not available in this build");
+}
+
 // ====== 通用 JSON 存储 ======
 const STORAGE_KEYS = {
   clothing: "@wardrobe/clothing",

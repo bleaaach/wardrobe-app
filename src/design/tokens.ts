@@ -4,6 +4,7 @@ export const Colors = {
   bg: "#FAF8F5",
   surface: "#FFFFFF",
   surfaceHover: "#F5F2EE",
+  surfaceActive: "#EDE9E4",
 
   // 文字 - 深度层次
   textPrimary: "#1C1917",
@@ -37,6 +38,7 @@ export const Colors = {
   // 阴影
   shadow: "rgba(28, 25, 23, 0.06)",
   shadowMd: "rgba(28, 25, 23, 0.10)",
+  shadowLg: "rgba(28, 25, 23, 0.14)",
 };
 
 export const Spacing = {
@@ -68,3 +70,31 @@ export const FontSize = {
 };
 
 export const TouchMin = 44; // 最小触控区域
+
+// 统一的阴影样式
+export const Shadows = {
+  sm: {
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  md: {
+    shadowColor: Colors.shadowMd,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  lg: {
+    shadowColor: Colors.shadowLg,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 1,
+    shadowRadius: 24,
+    elevation: 8,
+  },
+};
+
+// 按压反馈的不透明度
+export const PressedOpacity = 0.75;
