@@ -1,9 +1,10 @@
-import { View, Text, Image, ScrollView, Pressable, StyleSheet, Alert } from "react-native";
+import { View, Text, Image, Pressable, StyleSheet, Alert } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useClothingStore } from "../../src/store/clothingStore";
 import { Ionicons } from "@expo/vector-icons";
+import { Colors, Spacing, Radius, FontSize, TouchMin } from "../../src/design/tokens";
 
-export default function ClothingDetailScreen() {
+export default function ClothingDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const item = useClothingStore((s) => s.items.find((i) => i.id === id));
@@ -11,66 +12,55 @@ export default function ClothingDetailScreen() {
   const updateItem = useClothingStore((s) => s.updateItem);
   const deleteItem = useClothingStore((s) => s.deleteItem);
 
-  if (!item) {
-    return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <Text style={{ color: "#9ca3af" }}>衣物不存在</Text>
-      </View>
-    );
-  }
+  if (!item) return <View style={S.centered}><Text style={{ color: Colors.textTertiary }}>衣物不存在</Text></View>;
 
-  const catName = categories.find((c) => c.id === item.categoryId)?.name || "未分类";
-  const catIcon = categories.find((c) => c.id === item.categoryId)?.icon || "👕";
-
-  const handleDelete = () => {
-    Alert.alert("删除衣物", "确定要删除吗？", [
-      { text: "取消", style: "cancel" },
-      { text: "删除", style: "destructive", onPress: async () => { await deleteItem(id!); router.back(); } },
-    ]);
-  };
+  const cat = categories.find((c) => c.id === item.categoryId);
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Image source={{ uri: item.imageUri }} style={styles.image} />
-      <View style={styles.info}>
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.cat}>{catIcon} {catName}</Text>
-            <Text style={styles.name}>{item.name || "未命名"}</Text>
-          </View>
-          <Pressable onPress={() => updateItem(id!, { favorite: item.favorite ? 0 : 1 })}>
-            <Ionicons name={item.favorite ? "star" : "star-outline"} size={28} color={item.favorite ? "#f59e0b" : "#d1d5db"} />
-          </Pressable>
-        </View>
-        <View style={styles.tags}>
-          {item.brand ? <View style={styles.tag}><Text style={styles.tagText}>🏷 {item.brand}</Text></View> : null}
-          {item.color ? <View style={styles.tag}><Text style={styles.tagText}>🎨 {item.color}</Text></View> : null}
-          {item.season ? <View style={styles.tag}><Text style={styles.tagText}>📅 {item.season}</Text></View> : null}
-        </View>
-        {item.notes ? <Text style={styles.notes}>{item.notes}</Text> : null}
-        <Text style={styles.date}>添加于 {new Date(item.createdAt).toLocaleDateString("zh-CN")}</Text>
-      </View>
-      <Pressable style={styles.deleteBtn} onPress={handleDelete}>
-        <Ionicons name="trash-outline" size={20} color="#ef4444" />
-        <Text style={styles.deleteText}>删除</Text>
+    <View style={S.container}>
+      <Image source={{ uri: item.imageUri }} style={S.image} />
+
+      {/* Close & Favorite */}
+      <Pressable style={S.closeBtn} onPress={() => router.back()}><Ionicons name="close" size={22} color={Colors.textPrimary} /></Pressable>
+      <Pressable style={S.favBtn} onPress={() => updateItem(id!, { favorite: item.favorite ? 0 : 1 })}>
+        <Ionicons name={item.favorite ? "heart" : "heart-outline"} size={24} color={item.favorite ? Colors.danger : Colors.textPrimary} />
       </Pressable>
-    </ScrollView>
+
+      <View style={S.info}>
+        <View style={S.titleRow}>
+          <Text style={S.cat}>{cat?.icon} {cat?.name}</Text>
+          <Text style={S.name}>{item.name || "未命名"}</Text>
+        </View>
+        {item.season ? <View style={S.tag}><Text style={S.tagText}>{item.season}季</Text></View> : null}
+      </View>
+
+      <View style={S.actions}>
+        <Pressable style={S.deleteBtn} onPress={() => {
+          Alert.alert("删除", "确定删除这件衣物？", [
+            { text: "取消", style: "cancel" },
+            { text: "删除", style: "destructive", onPress: async () => { await deleteItem(id!); router.back(); } },
+          ]);
+        }}>
+          <Text style={S.deleteText}>删除</Text>
+        </Pressable>
+      </View>
+    </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f3f4f6" },
-  content: { paddingBottom: 40 },
-  image: { width: "100%", height: 360, backgroundColor: "#e5e7eb" },
-  info: { backgroundColor: "#fff", margin: 16, borderRadius: 16, padding: 16 },
-  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 },
-  cat: { fontSize: 14, color: "#6366f1", marginBottom: 4 },
-  name: { fontSize: 22, fontWeight: "700", color: "#111827" },
-  tags: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 12 },
-  tag: { backgroundColor: "#f3f4f6", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12 },
-  tagText: { fontSize: 13, color: "#6b7280" },
-  notes: { fontSize: 14, color: "#6b7280", marginBottom: 12, lineHeight: 20 },
-  date: { fontSize: 12, color: "#9ca3af" },
-  deleteBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, margin: 16, padding: 14, borderRadius: 12, backgroundColor: "#fff" },
-  deleteText: { color: "#ef4444", fontSize: 15 },
+const S = StyleSheet.create({
+  container: { flex: 1, backgroundColor: Colors.bg },
+  centered: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: Colors.bg },
+  image: { width: "100%", height: "55%", backgroundColor: Colors.surface },
+  closeBtn: { position: "absolute", top: 56, left: 16, width: 40, height: 40, borderRadius: 20, backgroundColor: Colors.surface, justifyContent: "center", alignItems: "center" },
+  favBtn: { position: "absolute", top: 56, right: 16, width: 40, height: 40, borderRadius: 20, backgroundColor: Colors.surface, justifyContent: "center", alignItems: "center" },
+  info: { padding: Spacing.xl, flex: 1 },
+  titleRow: { marginBottom: Spacing.md },
+  cat: { fontSize: FontSize.sm, color: Colors.accent, marginBottom: 4 },
+  name: { fontSize: FontSize.xl, fontWeight: "700", color: Colors.textPrimary },
+  tag: { alignSelf: "flex-start", backgroundColor: Colors.accentLight, paddingHorizontal: 12, paddingVertical: 6, borderRadius: Radius.full },
+  tagText: { fontSize: FontSize.sm, color: Colors.accent },
+  actions: { padding: Spacing.xl, paddingTop: 0 },
+  deleteBtn: { alignItems: "center", paddingVertical: 14, minHeight: TouchMin, justifyContent: "center" },
+  deleteText: { color: Colors.textTertiary, fontSize: FontSize.base },
 });
