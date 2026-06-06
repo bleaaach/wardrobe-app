@@ -1,19 +1,7 @@
 import JSZip from "jszip";
 import { Clothing } from "../types";
 import { getAllClothing, addClothing } from "../db/database";
-
-const UPLOAD_URL = "http://8.162.26.192/sync/upload/base64";
-
-async function uploadImage(base64: string, filename: string): Promise<string> {
-  const res = await fetch(UPLOAD_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ data: base64, name: filename }),
-  });
-  if (!res.ok) throw new Error("上传失败: " + res.status);
-  const json = await res.json();
-  return "http://8.162.26.192" + json.url;
-}
+import { storeImage } from "./imageStore";
 
 // 分类映射
 const SUB_CAT_MAP: Record<string, string> = {
@@ -95,7 +83,8 @@ export async function importClosetData(
 
     try {
       const base64 = await imageFiles.get(imgUUID)!.async("base64");
-      const imageUrl = await uploadImage(base64, imgUUID);
+      await storeImage(imgUUID, base64);
+      const imageUrl = "idx://" + imgUUID; // IndexedDB reference, resolved by AsyncImage
 
       const subName = subCatMap.get((c.categoryUUID || "").toUpperCase());
       const categoryId = mapCategory(subName);

@@ -1,4 +1,5 @@
-import { View, Text, Image, Pressable, StyleSheet, Alert } from "react-native";
+import { View, Text, Pressable, StyleSheet, Alert } from "react-native";
+import { AsyncImage } from "../../src/components/AsyncImage";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useClothingStore } from "../../src/store/clothingStore";
 import { Ionicons } from "@expo/vector-icons";
@@ -18,7 +19,7 @@ export default function ClothingDetail() {
 
   return (
     <View style={S.container}>
-      <Image source={{ uri: item.imageUri }} style={S.image} />
+      <AsyncImage uri={item.imageUri} style={S.image} />
 
       {/* Close & Favorite */}
       <Pressable style={S.closeBtn} onPress={() => router.back()}><Ionicons name="close" size={22} color={Colors.textPrimary} /></Pressable>

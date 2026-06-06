@@ -1,4 +1,5 @@
-import { View, Text, FlatList, Pressable, Image, TextInput, StyleSheet, Alert } from "react-native";
+import { View, Text, FlatList, Pressable, TextInput, StyleSheet, Alert } from "react-native";
+import { AsyncImage } from "../../src/components/AsyncImage";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { useClothingStore } from "../../src/store/clothingStore";
@@ -30,7 +31,7 @@ export default function CreateOutfitScreen() {
         contentContainerStyle={styles.grid}
         renderItem={({ item }) => (
           <Pressable style={[styles.item, selected.has(item.id) && styles.itemSelected]} onPress={() => toggleItem(item.id)}>
-            <Image source={{ uri: item.imageUri }} style={styles.itemImage} />
+            <AsyncImage uri={item.imageUri} style={styles.itemImage} />
             {selected.has(item.id) && <View style={styles.check}><Ionicons name="checkmark-circle" size={24} color="#6366f1" /></View>}
           </Pressable>
         )}

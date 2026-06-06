@@ -1,4 +1,5 @@
-import { View, Text, FlatList, Pressable, Image, StyleSheet } from "react-native";
+import { View, Text, FlatList, Pressable, StyleSheet } from "react-native";
+import { AsyncImage } from "../../src/components/AsyncImage";
 import { useRouter } from "expo-router";
 import { useClothingStore } from "../../src/store/clothingStore";
 import { useEffect, useState } from "react";
@@ -48,7 +49,7 @@ export default function ClosetScreen() {
         contentContainerStyle={S.grid}
         renderItem={({ item }: { item: Clothing }) => (
           <Pressable style={S.item} onPress={() => router.push(`/closet/${item.id}`)}>
-            <Image source={{ uri: item.imageUri }} style={S.image} />
+            <AsyncImage uri={item.imageUri} style={S.image} />
             <Text style={S.name} numberOfLines={1}>{item.name || catName(item.categoryId)}</Text>
           </Pressable>
         )}

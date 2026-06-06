@@ -1,4 +1,5 @@
-import { View, Text, Image, ScrollView, Pressable, StyleSheet, Alert } from "react-native";
+import { View, Text, ScrollView, Pressable, StyleSheet, Alert } from "react-native";
+import { AsyncImage } from "../../src/components/AsyncImage";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { getOutfits, deleteOutfit, getAllClothing } from "../../src/db/database";
@@ -33,7 +34,7 @@ export default function OutfitDetailScreen() {
       <View style={styles.grid}>
         {items.map((item) => (
           <Pressable key={item.id} style={styles.item} onPress={() => router.push(`/closet/${item.id}`)}>
-            <Image source={{ uri: item.imageUri }} style={styles.itemImage} />
+            <AsyncImage uri={item.imageUri} style={styles.itemImage} />
             <Text style={styles.itemName} numberOfLines={1}>{item.name || "未命名"}</Text>
           </Pressable>
         ))}

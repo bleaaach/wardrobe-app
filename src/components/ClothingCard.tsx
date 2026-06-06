@@ -1,4 +1,5 @@
-import { View, Text, Image, Pressable, StyleSheet } from "react-native";
+import { View, Text, Pressable, StyleSheet } from "react-native";
+import { AsyncImage } from "../../src/components/AsyncImage";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors, Spacing, Radius, FontSize, TouchMin } from "../design/tokens";
 

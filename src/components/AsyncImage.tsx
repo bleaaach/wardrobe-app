@@ -1,33 +1,24 @@
 import { useEffect, useState } from "react";
-import { Image, ImageProps, View } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-
-interface Props extends Omit<ImageProps, "source"> {
-  uri: string;
-}
+import { Image, View } from "react-native";
+import { getImageBlob } from "../services/imageStore";
 
 /**
- * Image wrapper that supports AsyncStorage-stored base64 images.
- * If URI starts with @wardrobe/img/, loads from AsyncStorage.
+ * Image wrapper that supports IndexedDB-stored images.
+ * If URI starts with "idx://", loads from IndexedDB as Blob URL.
  * Otherwise passes through to standard Image.
  */
-export function AsyncImage({ uri, style, ...props }: Props) {
+export function AsyncImage({ uri, style }: { uri: string; style?: any }) {
   const [src, setSrc] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!uri) { setLoading(false); return; }
 
-    if (uri.startsWith("@wardrobe/img/") || uri.startsWith("data:")) {
-      // Already a data URI or stored image reference
-      if (uri.startsWith("data:")) {
-        setSrc(uri);
-        setLoading(false);
-        return;
-      }
-      AsyncStorage.getItem(uri).then((data) => {
-        if (data) {
-          setSrc(`data:image/png;base64,${data}`);
+    if (uri.startsWith("idx://")) {
+      const id = uri.replace("idx://", "");
+      getImageBlob(id).then((blob) => {
+        if (blob) {
+          setSrc(URL.createObjectURL(blob));
         }
         setLoading(false);
       }).catch(() => setLoading(false));
@@ -38,8 +29,8 @@ export function AsyncImage({ uri, style, ...props }: Props) {
   }, [uri]);
 
   if (loading) {
-    return <View style={[{ backgroundColor: "#f0eeec" }, style as any]} />;
+    return <View style={[{ backgroundColor: "#f0eeec" }, style]} />;
   }
 
-  return <Image source={{ uri: src || uri }} style={style} {...props} />;
+  return <Image source={{ uri: src || uri }} style={style} />;
 }

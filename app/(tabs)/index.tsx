@@ -1,4 +1,5 @@
-import { View, Text, ScrollView, Pressable, Image, StyleSheet } from "react-native";
+import { View, Text, ScrollView, Pressable, StyleSheet } from "react-native";
+import { AsyncImage } from "../../src/components/AsyncImage";
 import { useRouter } from "expo-router";
 import { useClothingStore } from "../../src/store/clothingStore";
 import { Ionicons } from "@expo/vector-icons";
@@ -56,7 +57,7 @@ export default function HomeScreen() {
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={S.hScroll}>
                 {favorites.map((item) => (
                   <Pressable key={item.id} style={S.favItem} onPress={() => router.push(`/closet/${item.id}`)}>
-                    <Image source={{ uri: item.imageUri }} style={S.favImage} />
+                    <AsyncImage uri={item.imageUri} style={S.favImage} />
                   </Pressable>
                 ))}
               </ScrollView>
@@ -74,7 +75,7 @@ export default function HomeScreen() {
             <View style={S.grid}>
               {recentItems.map((item) => (
                 <Pressable key={item.id} style={S.gridItem} onPress={() => router.push(`/closet/${item.id}`)}>
-                  <Image source={{ uri: item.imageUri }} style={S.gridImage} />
+                  <AsyncImage uri={item.imageUri} style={S.gridImage} />
                 </Pressable>
               ))}
             </View>
