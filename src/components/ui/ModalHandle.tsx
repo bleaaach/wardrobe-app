@@ -12,13 +12,13 @@ export function ModalHandle() {
 const S = StyleSheet.create({
   container: {
     alignItems: "center",
-    paddingTop: 8,
-    paddingBottom: 12,
+    paddingTop: 10,
+    paddingBottom: 14,
   },
   bar: {
-    width: 36,
-    height: 5,
+    width: 40,
+    height: 4,
     borderRadius: Radius.full,
-    backgroundColor: "rgba(255,255,255,0.2)",
+    backgroundColor: Colors.textTertiary,
   },
 });

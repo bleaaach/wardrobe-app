@@ -1,0 +1,1394 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Wardrobe</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            --bg: #FAF8F5;
+            --card: #FFFFFF;
+            --text-primary: #1C1917;
+            --text-secondary: #78716C;
+            --accent: #E07A5F;
+            --divider: #E7E5E4;
+            --nav-inactive: #A8A29E;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            color: var(--text-primary);
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            touch-action: manipulation;
+        }
+
+        .phone-frame {
+            width: 390px;
+            height: 844px;
+            background: var(--bg);
+            border-radius: 40px;
+            box-shadow: 0 25px 80px rgba(0,0,0,0.15), 0 0 0 12px #1C1917;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .status-bar {
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            font-size: 15px;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+        }
+
+        .status-bar .time {
+            font-variant-numeric: tabular-nums;
+        }
+
+        .status-bar .icons {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .status-bar .icons svg {
+            width: 18px;
+            height: 18px;
+            stroke: var(--text-primary);
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .notch {
+            position: absolute;
+            top: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 126px;
+            height: 34px;
+            background: #1C1917;
+            border-radius: 20px;
+            z-index: 100;
+        }
+
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 0 20px;
+            scrollbar-width: none;
+        }
+
+        .content::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* ===== Icons ===== */
+        .icon {
+            width: 22px;
+            height: 22px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        .icon-sm {
+            width: 18px;
+            height: 18px;
+        }
+
+        .icon-xs {
+            width: 14px;
+            height: 14px;
+        }
+
+        /* ===== TODAY PAGE ===== */
+        .page-today {
+            padding-top: 8px;
+        }
+
+        .today-header {
+            margin-bottom: 24px;
+            position: relative;
+        }
+
+        .today-header .weekday {
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .today-header .date-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .today-header .date {
+            font-family: 'Playfair Display', serif;
+            font-size: 52px;
+            font-style: italic;
+            font-weight: 600;
+            line-height: 1.1;
+            color: var(--text-primary);
+        }
+
+        .add-btn {
+            width: 48px;
+            height: 48px;
+            background: var(--text-primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 28px;
+            font-weight: 300;
+            margin-top: 4px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            border: none;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .add-btn:active {
+            transform: scale(0.92);
+        }
+
+        .section-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 16px;
+        }
+
+        .section-title h2 {
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: var(--text-secondary);
+        }
+
+        .section-title .count {
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-weight: 400;
+        }
+
+        .outfit-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .outfit-item {
+            display: flex;
+            gap: 14px;
+            align-items: flex-start;
+            padding: 4px 0;
+        }
+
+        .outfit-thumb {
+            width: 72px;
+            height: 72px;
+            border-radius: 16px;
+            background: var(--card);
+            overflow: hidden;
+            flex-shrink: 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            letter-spacing: 1px;
+        }
+
+        .outfit-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .outfit-info {
+            flex: 1;
+            padding-top: 2px;
+        }
+
+        .outfit-meta {
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .outfit-meta .dot {
+            width: 3px;
+            height: 3px;
+            background: var(--text-secondary);
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .outfit-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 3px;
+            line-height: 1.3;
+        }
+
+        .outfit-desc {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        /* ===== CLOSET PAGE ===== */
+        .page-closet {
+            padding-top: 8px;
+            display: none;
+        }
+
+        .category-chips {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+
+        .category-chips::-webkit-scrollbar {
+            display: none;
+        }
+
+        .chip {
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 1px solid var(--divider);
+            background: transparent;
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+
+        .chip.active {
+            background: var(--text-primary);
+            color: #fff;
+            border-color: var(--text-primary);
+        }
+
+        .closet-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            padding-bottom: 24px;
+        }
+
+        .closet-item {
+            text-align: center;
+        }
+
+        .item-thumb {
+            width: 100%;
+            aspect-ratio: 0.8;
+            background: var(--card);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            letter-spacing: 1px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            margin-bottom: 6px;
+        }
+
+        .item-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding: 0 2px;
+        }
+
+        /* ===== OUTFITS PAGE ===== */
+        .page-outfits {
+            padding-top: 8px;
+            display: none;
+        }
+
+        .outfit-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            padding-bottom: 24px;
+        }
+
+        .outfit-card {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+
+        .outfit-collage {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+
+        .collage-part {
+            aspect-ratio: 0.9;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            letter-spacing: 1px;
+        }
+
+        .outfit-card-name {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .outfit-card-meta {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        /* ===== CALENDAR PAGE ===== */
+        .page-calendar {
+            padding-top: 8px;
+            display: none;
+        }
+
+        .calendar-header {
+            margin-bottom: 20px;
+        }
+
+        .calendar-header .year {
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-weight: 500;
+            margin-bottom: 2px;
+        }
+
+        .calendar-header .month-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .calendar-header .month {
+            font-family: 'Playfair Display', serif;
+            font-size: 42px;
+            font-style: italic;
+            font-weight: 600;
+        }
+
+        .month-nav {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+
+        .month-nav button {
+            background: none;
+            border: none;
+            font-size: 20px;
+            color: var(--text-primary);
+            cursor: pointer;
+            padding: 4px;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background 0.2s;
+        }
+
+        .month-nav button:active {
+            background: var(--divider);
+        }
+
+        .view-toggle {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .view-toggle button {
+            padding: 8px 20px;
+            border-radius: 20px;
+            border: none;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .view-toggle button.inactive {
+            background: transparent;
+            color: var(--text-secondary);
+        }
+
+        .view-toggle button.active {
+            background: var(--text-primary);
+            color: white;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+
+        .weekday-label {
+            text-align: center;
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+            padding: 4px 0;
+        }
+
+        .calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 14px;
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.15s;
+        }
+
+        .calendar-day:active {
+            transform: scale(0.95);
+        }
+
+        .calendar-day .day-num {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .calendar-day.has-outfit {
+            background: var(--card);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+
+        .calendar-day.has-outfit .day-thumb {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            letter-spacing: 0.5px;
+            margin-bottom: 2px;
+        }
+
+        .calendar-day.has-outfit .day-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .calendar-day.has-outfit .day-num {
+            font-size: 10px;
+            color: var(--text-secondary);
+        }
+
+        .calendar-day.selected {
+            outline: 2px solid var(--text-primary);
+            outline-offset: -2px;
+        }
+
+        .calendar-day.empty {
+            pointer-events: none;
+        }
+
+        .selected-day-detail {
+            margin-bottom: 24px;
+        }
+
+        .selected-day-detail .day-label {
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+        }
+
+        .day-outfits {
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+            padding-bottom: 8px;
+            scrollbar-width: none;
+        }
+
+        .day-outfits::-webkit-scrollbar {
+            display: none;
+        }
+
+        .day-outfit-card {
+            min-width: 140px;
+            background: var(--card);
+            border-radius: 16px;
+            padding: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+
+        .day-outfit-card .card-thumb {
+            width: 100%;
+            height: 100px;
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            letter-spacing: 0.5px;
+            background: var(--bg);
+            margin-bottom: 8px;
+        }
+
+        .day-outfit-card .card-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .day-outfit-card .card-category {
+            font-size: 10px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text-secondary);
+            margin-bottom: 2px;
+        }
+
+        .day-outfit-card .card-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .stats-section {
+            margin-bottom: 24px;
+        }
+
+        .stats-section h3 {
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .stat-card {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 16px 12px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+
+        .stat-card .stat-num {
+            font-family: 'Playfair Display', serif;
+            font-size: 32px;
+            font-weight: 600;
+            color: var(--text-primary);
+            line-height: 1;
+            margin-bottom: 6px;
+        }
+
+        .stat-card .stat-label {
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text-secondary);
+        }
+
+        /* ===== ME PAGE ===== */
+        .page-me {
+            padding-top: 8px;
+            display: none;
+        }
+
+        .me-header {
+            text-align: center;
+            padding: 20px 0 28px;
+            position: relative;
+        }
+
+        .floating-items {
+            position: relative;
+            height: 140px;
+            margin-bottom: 16px;
+        }
+
+        .float-item {
+            position: absolute;
+            width: 64px;
+            height: 64px;
+            border-radius: 16px;
+            background: var(--card);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            letter-spacing: 0.5px;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .float-item:nth-child(1) { top: 10px; left: 30px; animation-delay: 0s; }
+        .float-item:nth-child(2) { top: 40px; left: 110px; animation-delay: 1.5s; width: 56px; height: 56px; font-size: 11px; }
+        .float-item:nth-child(3) { top: 15px; right: 40px; animation-delay: 3s; }
+        .float-item:nth-child(4) { top: 75px; left: 60px; animation-delay: 2s; width: 52px; height: 52px; font-size: 10px; }
+        .float-item:nth-child(5) { top: 70px; right: 70px; animation-delay: 4.5s; width: 48px; height: 48px; font-size: 10px; }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-8px) rotate(2deg); }
+        }
+
+        .view-all-float {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            cursor: pointer;
+            background: none;
+            border: none;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .brand-name {
+            font-family: 'Playfair Display', serif;
+            font-size: 32px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .brand-name .sparkle {
+            width: 20px;
+            height: 20px;
+            stroke: var(--accent);
+            fill: var(--accent);
+        }
+
+        .brand-sub {
+            font-size: 14px;
+            color: var(--text-secondary);
+            font-weight: 400;
+        }
+
+        .stats-row {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin: 28px 0;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-item .stat-big {
+            font-family: 'Playfair Display', serif;
+            font-size: 36px;
+            font-weight: 600;
+            color: var(--text-primary);
+            line-height: 1;
+            margin-bottom: 6px;
+        }
+
+        .stat-item .stat-small {
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-secondary);
+        }
+
+        .settings-section {
+            margin-bottom: 20px;
+        }
+
+        .settings-section h3 {
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+        }
+
+        .settings-list {
+            background: var(--card);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+
+        .setting-item {
+            display: flex;
+            align-items: center;
+            padding: 16px 18px;
+            gap: 14px;
+            cursor: pointer;
+            transition: background 0.15s;
+            border-bottom: 1px solid var(--bg);
+            background: none;
+            border-left: none;
+            border-right: none;
+            border-top: none;
+            width: 100%;
+            text-align: left;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .setting-item:last-child {
+            border-bottom: none;
+        }
+
+        .setting-item:active {
+            background: var(--bg);
+        }
+
+        .setting-icon {
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .setting-icon svg {
+            width: 18px;
+            height: 18px;
+            stroke: var(--text-secondary);
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .setting-label {
+            flex: 1;
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .setting-value {
+            font-size: 14px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .setting-value .arrow {
+            font-size: 18px;
+            color: var(--text-secondary);
+        }
+
+        .version {
+            text-align: center;
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin: 20px 0 8px;
+        }
+
+        /* ===== BOTTOM NAV ===== */
+        .bottom-nav {
+            height: 80px;
+            background: var(--bg);
+            border-top: 1px solid var(--divider);
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-start;
+            padding-top: 10px;
+            padding-bottom: 20px;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            padding: 4px 12px;
+            border-radius: 12px;
+            transition: all 0.2s;
+            user-select: none;
+            background: none;
+            border: none;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .nav-item:active {
+            transform: scale(0.92);
+        }
+
+        .nav-item .nav-icon {
+            width: 22px;
+            height: 22px;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            fill: none;
+            transition: all 0.2s;
+        }
+
+        .nav-item .nav-label {
+            font-size: 10px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .nav-item.active .nav-icon {
+            stroke: var(--text-primary);
+        }
+
+        .nav-item.active .nav-label {
+            color: var(--text-primary);
+        }
+
+        .nav-item:not(.active) .nav-icon {
+            stroke: var(--nav-inactive);
+        }
+
+        .nav-item:not(.active) .nav-label {
+            color: var(--nav-inactive);
+        }
+
+        /* Page transition */
+        .page {
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ===== Reduced motion ===== */
+        @media (prefers-reduced-motion: reduce) {
+            .float-item { animation: none; }
+            .page { animation: none; }
+            .nav-item, .add-btn, .calendar-day, .month-nav button, .chip, .view-toggle button { transition: none; }
+        }
+    </style>
+<base target="_blank">
+</head>
+<body>
+    <div class="phone-frame">
+        <div class="notch"></div>
+        <div class="status-bar">
+            <span class="time" id="clock">23:18</span>
+            <div class="icons">
+                <svg viewBox="0 0 24 24"><path d="M6 10l0 4"/><path d="M10 8l0 8"/><path d="M14 6l0 12"/><path d="M18 9l0 6"/></svg>
+                <svg viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/></svg>
+                <svg viewBox="0 0 24 24"><rect x="2" y="7" width="16" height="10" rx="2"/><path d="M22 11v2"/></svg>
+            </div>
+        </div>
+
+        <div class="content">
+            <!-- ===== TODAY PAGE ===== -->
+            <div class="page page-today" id="page-today">
+                <div class="today-header">
+                    <div class="weekday">MONDAY</div>
+                    <div class="date-row">
+                        <div class="date">May 18</div>
+                        <button class="add-btn" aria-label="Add item">+</button>
+                    </div>
+                </div>
+
+                <div class="section-title">
+                    <h2>TODAY'S OUTFIT</h2>
+                    <span class="count">3 entries</span>
+                </div>
+
+                <div class="outfit-list">
+                    <div class="outfit-item">
+                        <div class="outfit-thumb" style="background:#F5F2EE;">TO</div>
+                        <div class="outfit-info">
+                            <div class="outfit-meta">
+                                TOPS <span class="dot"></span> 08:30
+                            </div>
+                            <div class="outfit-name">White Linen Shirt</div>
+                            <div class="outfit-desc">Oversized fit, breathable cotton. Perfect for summer days.</div>
+                        </div>
+                    </div>
+
+                    <div class="outfit-item">
+                        <div class="outfit-thumb" style="background:#EDE9E4;">BT</div>
+                        <div class="outfit-info">
+                            <div class="outfit-meta">
+                                BOTTOMS <span class="dot"></span> 14:10
+                            </div>
+                            <div class="outfit-name">Wide-leg Trousers</div>
+                            <div class="outfit-desc">High-waisted, beige wool blend. A light afternoon lift.</div>
+                        </div>
+                    </div>
+
+                    <div class="outfit-item">
+                        <div class="outfit-thumb" style="background:#F5F2EE;">SH</div>
+                        <div class="outfit-info">
+                            <div class="outfit-meta">
+                                SHOES <span class="dot"></span> 19:45
+                            </div>
+                            <div class="outfit-name">Common Projects</div>
+                            <div class="outfit-desc">Minimal white leather sneakers. Cozy evening.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== CLOSET PAGE ===== -->
+            <div class="page page-closet" id="page-closet">
+                <div class="section-title" style="margin-top: 8px;">
+                    <h2>CLOSET</h2>
+                    <span class="count">47 items</span>
+                </div>
+                <div class="category-chips">
+                    <button class="chip active">ALL</button>
+                    <button class="chip">TOPS</button>
+                    <button class="chip">BOTTOMS</button>
+                    <button class="chip">SHOES</button>
+                    <button class="chip">BAGS</button>
+                    <button class="chip">ACCESSORIES</button>
+                </div>
+                <div class="closet-grid">
+                    <div class="closet-item"><div class="item-thumb" style="background:#F5F2EE;">TO</div><div class="item-label">Linen Shirt</div></div>
+                    <div class="closet-item"><div class="item-thumb" style="background:#EDE9E4;">BT</div><div class="item-label">Trousers</div></div>
+                    <div class="closet-item"><div class="item-thumb" style="background:#F5F2EE;">TO</div><div class="item-label">Knit Polo</div></div>
+                    <div class="closet-item"><div class="item-thumb" style="background:#EDE9E4;">SH</div><div class="item-label">Sneakers</div></div>
+                    <div class="closet-item"><div class="item-thumb" style="background:#F5F2EE;">DR</div><div class="item-label">Day Dress</div></div>
+                    <div class="closet-item"><div class="item-thumb" style="background:#EDE9E4;">CO</div><div class="item-label">Trench</div></div>
+                    <div class="closet-item"><div class="item-thumb" style="background:#F5F2EE;">TO</div><div class="item-label">Tank Top</div></div>
+                    <div class="closet-item"><div class="item-thumb" style="background:#EDE9E4;">BT</div><div class="item-label">Denim</div></div>
+                    <div class="closet-item"><div class="item-thumb" style="background:#F5F2EE;">BG</div><div class="item-label">Tote</div></div>
+                </div>
+            </div>
+
+            <!-- ===== OUTFITS PAGE ===== -->
+            <div class="page page-outfits" id="page-outfits">
+                <div class="section-title" style="margin-top: 8px;">
+                    <h2>OUTFITS</h2>
+                    <span class="count">12 sets</span>
+                </div>
+                <div class="outfit-grid">
+                    <div class="outfit-card">
+                        <div class="outfit-collage">
+                            <div class="collage-part" style="background:#F5F2EE;">TO</div>
+                            <div class="collage-part" style="background:#EDE9E4;">BT</div>
+                            <div class="collage-part" style="background:#F0EEEC;">SH</div>
+                            <div class="collage-part" style="background:#E7E5E4;">AC</div>
+                        </div>
+                        <div class="outfit-card-name">Summer Casual</div>
+                        <div class="outfit-card-meta">4 items</div>
+                    </div>
+                    <div class="outfit-card">
+                        <div class="outfit-collage">
+                            <div class="collage-part" style="background:#EDE9E4;">CO</div>
+                            <div class="collage-part" style="background:#F5F2EE;">TO</div>
+                            <div class="collage-part" style="background:#F0EEEC;">BT</div>
+                            <div class="collage-part" style="background:#E7E5E4;">SH</div>
+                        </div>
+                        <div class="outfit-card-name">Work Meeting</div>
+                        <div class="outfit-card-meta">4 items</div>
+                    </div>
+                    <div class="outfit-card">
+                        <div class="outfit-collage">
+                            <div class="collage-part" style="background:#F5F2EE;">DR</div>
+                            <div class="collage-part" style="background:#EDE9E4;">BG</div>
+                            <div class="collage-part" style="background:#F0EEEC;">SH</div>
+                            <div class="collage-part" style="background:#E7E5E4;">AC</div>
+                        </div>
+                        <div class="outfit-card-name">Weekend Date</div>
+                        <div class="outfit-card-meta">4 items</div>
+                    </div>
+                    <div class="outfit-card">
+                        <div class="outfit-collage">
+                            <div class="collage-part" style="background:#EDE9E4;">TO</div>
+                            <div class="collage-part" style="background:#F5F2EE;">BT</div>
+                            <div class="collage-part" style="background:#F0EEEC;">SH</div>
+                            <div class="collage-part" style="background:#E7E5E4;">AC</div>
+                        </div>
+                        <div class="outfit-card-name">Daily Run</div>
+                        <div class="outfit-card-meta">4 items</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== CALENDAR PAGE ===== -->
+            <div class="page page-calendar" id="page-calendar">
+                <div class="calendar-header">
+                    <div class="year">2026</div>
+                    <div class="month-row">
+                        <div class="month">May</div>
+                        <div class="month-nav">
+                            <button aria-label="Previous month">&#8249;</button>
+                            <button aria-label="Next month">&#8250;</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="view-toggle">
+                    <button class="inactive">Week</button>
+                    <button class="active">Month</button>
+                    <button class="inactive">Year</button>
+                </div>
+
+                <div class="calendar-grid">
+                    <div class="weekday-label">M</div>
+                    <div class="weekday-label">T</div>
+                    <div class="weekday-label">W</div>
+                    <div class="weekday-label">T</div>
+                    <div class="weekday-label">F</div>
+                    <div class="weekday-label">S</div>
+                    <div class="weekday-label">S</div>
+
+                    <div class="calendar-day empty"></div>
+                    <div class="calendar-day empty"></div>
+                    <div class="calendar-day empty"></div>
+                    <div class="calendar-day"><span class="day-num">1</span></div>
+                    <div class="calendar-day has-outfit">
+                        <div class="day-thumb" style="background:#F5F2EE;">DR</div>
+                        <span class="day-num">2</span>
+                    </div>
+                    <div class="calendar-day"><span class="day-num">3</span></div>
+                    <div class="calendar-day"><span class="day-num">4</span></div>
+
+                    <div class="calendar-day has-outfit">
+                        <div class="day-thumb" style="background:#EDE9E4;">TO</div>
+                        <span class="day-num">5</span>
+                    </div>
+                    <div class="calendar-day"><span class="day-num">6</span></div>
+                    <div class="calendar-day"><span class="day-num">7</span></div>
+                    <div class="calendar-day has-outfit">
+                        <div class="day-thumb" style="background:#F5F2EE;">DR</div>
+                        <span class="day-num">8</span>
+                    </div>
+                    <div class="calendar-day"><span class="day-num">9</span></div>
+                    <div class="calendar-day has-outfit">
+                        <div class="day-thumb" style="background:#EDE9E4;">TO</div>
+                        <span class="day-num">10</span>
+                    </div>
+                    <div class="calendar-day"><span class="day-num">11</span></div>
+
+                    <div class="calendar-day has-outfit">
+                        <div class="day-thumb" style="background:#F0EEEC;">SH</div>
+                        <span class="day-num">12</span>
+                    </div>
+                    <div class="calendar-day"><span class="day-num">13</span></div>
+                    <div class="calendar-day has-outfit">
+                        <div class="day-thumb" style="background:#F5F2EE;">CO</div>
+                        <span class="day-num">14</span>
+                    </div>
+                    <div class="calendar-day"><span class="day-num">15</span></div>
+                    <div class="calendar-day has-outfit">
+                        <div class="day-thumb" style="background:#F5F2EE;">DR</div>
+                        <span class="day-num">16</span>
+                    </div>
+                    <div class="calendar-day has-outfit">
+                        <div class="day-thumb" style="background:#EDE9E4;">BT</div>
+                        <span class="day-num">17</span>
+                    </div>
+                    <div class="calendar-day has-outfit selected">
+                        <div class="day-thumb" style="background:#EDE9E4;">TO</div>
+                        <span class="day-num">18</span>
+                    </div>
+
+                    <div class="calendar-day has-outfit">
+                        <div class="day-thumb" style="background:#F5F2EE;">DR</div>
+                        <span class="day-num">19</span>
+                    </div>
+                    <div class="calendar-day"><span class="day-num">20</span></div>
+                    <div class="calendar-day"><span class="day-num">21</span></div>
+                    <div class="calendar-day"><span class="day-num">22</span></div>
+                    <div class="calendar-day"><span class="day-num">23</span></div>
+                    <div class="calendar-day"><span class="day-num">24</span></div>
+                    <div class="calendar-day"><span class="day-num">25</span></div>
+
+                    <div class="calendar-day"><span class="day-num">26</span></div>
+                    <div class="calendar-day"><span class="day-num">27</span></div>
+                    <div class="calendar-day"><span class="day-num">28</span></div>
+                    <div class="calendar-day"><span class="day-num">29</span></div>
+                    <div class="calendar-day"><span class="day-num">30</span></div>
+                    <div class="calendar-day"><span class="day-num">31</span></div>
+                    <div class="calendar-day empty"></div>
+                </div>
+
+                <div class="selected-day-detail">
+                    <div class="day-label">MONDAY, MAY 18</div>
+                    <div class="day-outfits">
+                        <div class="day-outfit-card">
+                            <div class="card-thumb" style="background:#F5F2EE;">TO</div>
+                            <div class="card-category">TOPS</div>
+                            <div class="card-name">White Linen Shirt</div>
+                        </div>
+                        <div class="day-outfit-card">
+                            <div class="card-thumb" style="background:#EDE9E4;">BT</div>
+                            <div class="card-category">BOTTOMS</div>
+                            <div class="card-name">Wide-leg Trousers</div>
+                        </div>
+                        <div class="day-outfit-card">
+                            <div class="card-thumb" style="background:#F0EEEC;">SH</div>
+                            <div class="card-category">SHOES</div>
+                            <div class="card-name">Common Projects</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stats-section">
+                    <h3>MAY IN NUMBERS</h3>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-num">12</div>
+                            <div class="stat-label">Days</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-num">28</div>
+                            <div class="stat-label">Items</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-num">8</div>
+                            <div class="stat-label">Outfits</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== ME PAGE ===== -->
+            <div class="page page-me" id="page-me">
+                <div class="me-header">
+                    <div class="floating-items">
+                        <div class="float-item" style="background:#F5F2EE;">DR</div>
+                        <div class="float-item" style="background:#EDE9E4;">CO</div>
+                        <div class="float-item" style="background:#F0EEEC;">SH</div>
+                        <div class="float-item" style="background:#E7E5E4;">BG</div>
+                        <div class="float-item" style="background:#FAF8F5;">SN</div>
+                        <button class="view-all-float">View all &#8599;</button>
+                    </div>
+                    <div class="brand-name">Wardrobe
+                        <svg class="sparkle" viewBox="0 0 24 24">
+                            <path d="M12 2l2.4 7.2h7.6l-6 4.8 2.4 7.2-6-4.8-6 4.8 2.4-7.2-6-4.8h7.6z"/>
+                        </svg>
+                    </div>
+                    <div class="brand-sub">Curating since May 2026</div>
+                </div>
+
+                <div class="stats-row">
+                    <div class="stat-item">
+                        <div class="stat-big">47</div>
+                        <div class="stat-small">Items</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-big">12</div>
+                        <div class="stat-small">Outfits</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-big">8</div>
+                        <div class="stat-small">Streak</div>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <h3>SETTINGS</h3>
+                    <div class="settings-list">
+                        <button class="setting-item">
+                            <div class="setting-icon">
+                                <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                            </div>
+                            <div class="setting-label">Reminders</div>
+                            <div class="setting-value">
+                                Daily 8:00
+                                <span class="arrow">&#8250;</span>
+                            </div>
+                        </button>
+                        <button class="setting-item">
+                            <div class="setting-icon">
+                                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+                            </div>
+                            <div class="setting-label">Appearance</div>
+                            <div class="setting-value">
+                                Light
+                                <span class="arrow">&#8250;</span>
+                            </div>
+                        </button>
+                        <button class="setting-item">
+                            <div class="setting-icon">
+                                <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            </div>
+                            <div class="setting-label">Export data</div>
+                            <div class="setting-value">
+                                <span class="arrow">&#8250;</span>
+                            </div>
+                        </button>
+                        <button class="setting-item">
+                            <div class="setting-icon">
+                                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                            </div>
+                            <div class="setting-label">Help & feedback</div>
+                            <div class="setting-value">
+                                <span class="arrow">&#8250;</span>
+                            </div>
+                        </button>
+                        <button class="setting-item">
+                            <div class="setting-icon">
+                                <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                            </div>
+                            <div class="setting-label">About Wardrobe</div>
+                            <div class="setting-value">
+                                <span class="arrow">&#8250;</span>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="version">WARDROBE &middot; V1.0</div>
+            </div>
+        </div>
+
+        <div class="bottom-nav">
+            <button class="nav-item active" onclick="switchTab('today')" aria-label="Today">
+                <svg class="nav-icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                <span class="nav-label">Today</span>
+            </button>
+            <button class="nav-item" onclick="switchTab('closet')" aria-label="Closet">
+                <svg class="nav-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                <span class="nav-label">Closet</span>
+            </button>
+            <button class="nav-item" onclick="switchTab('outfits')" aria-label="Outfits">
+                <svg class="nav-icon" viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+                <span class="nav-label">Outfits</span>
+            </button>
+            <button class="nav-item" onclick="switchTab('calendar')" aria-label="Calendar">
+                <svg class="nav-icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                <span class="nav-label">Calendar</span>
+            </button>
+            <button class="nav-item" onclick="switchTab('me')" aria-label="Me">
+                <svg class="nav-icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                <span class="nav-label">Me</span>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(tab) {
+            document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
+            document.getElementById('page-' + tab).style.display = 'block';
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+        }
+
+        function updateClock() {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            document.getElementById('clock').textContent = hours + ':' + minutes;
+        }
+        updateClock();
+        setInterval(updateClock, 60000);
+    </script>
+</body>
+</html>

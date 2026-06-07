@@ -127,6 +127,9 @@ export interface DailyLog {
   clothingIds?: string;
   notes?: string;
   imageUri?: string;
+  mood?: string;
+  weather?: string;
+  occasion?: string;
   createdAt: string;
   updatedAt: string;
 }

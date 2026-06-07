@@ -3,7 +3,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DB_PATH = path.join(__dirname, "..", "data", "wardrobe.db");
+const DB_PATH = process.env.TEST_DB_PATH || path.join(__dirname, "..", "data", "wardrobe.db");
 
 let db;
 
@@ -60,6 +60,7 @@ export function initDB() {
       image_uri TEXT,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL,
+      deleted INTEGER DEFAULT 0,
       FOREIGN KEY (user_id) REFERENCES users(id)
     );
 
@@ -80,4 +81,11 @@ export function initDB() {
 export function getDB() {
   if (!db) return initDB();
   return db;
+}
+
+export function closeDB() {
+  if (db) {
+    db.close();
+    db = null;
+  }
 }

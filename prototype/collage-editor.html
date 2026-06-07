@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Collage Editor</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        :root {
+            --bg: #FAF8F5; --card: #FFFFFF; --text-primary: #1C1917;
+            --text-secondary: #78716C; --accent: #E07A5F; --divider: #E7E5E4;
+            --nav-inactive: #A8A29E;
+        }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg); color: var(--text-primary);
+            overflow: hidden; height: 100vh; display: flex;
+            justify-content: center; align-items: center; touch-action: manipulation;
+        }
+        .phone-frame {
+            width: 390px; height: 844px; background: var(--bg);
+            border-radius: 40px; box-shadow: 0 25px 80px rgba(0,0,0,0.15), 0 0 0 12px #1C1917;
+            position: relative; overflow: hidden; display: flex; flex-direction: column;
+        }
+        .notch { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); width: 126px; height: 34px; background: #1C1917; border-radius: 20px; z-index: 100; }
+        .status-bar { height: 44px; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; font-size: 15px; font-weight: 600; letter-spacing: -0.3px; }
+        .status-bar .icons { display: flex; gap: 6px; align-items: center; }
+        .status-bar .icons svg { width: 18px; height: 18px; stroke: var(--text-primary); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+        .nav-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 8px 20px 12px;
+        }
+        .nav-header .back {
+            width: 36px; height: 36px; border-radius: 50%; border: none;
+            background: var(--card); display: flex; align-items: center; justify-content: center;
+            cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        .nav-header .back svg { width: 18px; height: 18px; stroke: var(--text-primary); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        .nav-header h1 {
+            font-family: 'Playfair Display', serif; font-size: 22px; font-style: italic; font-weight: 600;
+        }
+        .nav-header .done {
+            padding: 8px 18px; border-radius: 20px; border: none;
+            background: var(--text-primary); color: #fff; font-size: 13px; font-weight: 600;
+            cursor: pointer; font-family: 'Inter', sans-serif;
+        }
+
+        .canvas-area {
+            flex: 1; margin: 0 20px; background: var(--card); border-radius: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04); position: relative; overflow: hidden;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .canvas-item {
+            position: absolute; width: 100px; height: 100px; border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 13px; font-weight: 700; color: var(--text-secondary); letter-spacing: 0.5px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.08); cursor: grab; user-select: none;
+            border: 2px solid transparent; transition: border 0.15s;
+        }
+        .canvas-item:active { cursor: grabbing; }
+        .canvas-item.selected { border-color: var(--text-primary); }
+        .canvas-item .layer-label {
+            position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%);
+            font-size: 10px; color: var(--text-secondary); white-space: nowrap;
+        }
+
+        .toolbar {
+            padding: 16px 20px 24px;
+        }
+        .toolbar-label {
+            font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 3px;
+            color: var(--text-secondary); margin-bottom: 12px; text-align: center;
+        }
+        .tool-row {
+            display: flex; gap: 10px; justify-content: center;
+        }
+        .tool-btn {
+            display: flex; flex-direction: column; align-items: center; gap: 6px;
+            padding: 10px 14px; border-radius: 14px; border: 1px solid var(--divider);
+            background: var(--card); cursor: pointer; font-family: 'Inter', sans-serif;
+            transition: all 0.15s; min-width: 64px;
+        }
+        .tool-btn:active { transform: scale(0.95); background: var(--bg); }
+        .tool-btn svg { width: 20px; height: 20px; stroke: var(--text-primary); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        .tool-btn span { font-size: 11px; font-weight: 500; color: var(--text-secondary); }
+    </style>
+</head>
+<body>
+    <div class="phone-frame">
+        <div class="notch"></div>
+        <div class="status-bar">
+            <span class="time">09:41</span>
+            <div class="icons">
+                <svg viewBox="0 0 24 24"><path d="M6 10l0 4"/><path d="M10 8l0 8"/><path d="M14 6l0 12"/><path d="M18 9l0 6"/></svg>
+                <svg viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/></svg>
+                <svg viewBox="0 0 24 24"><rect x="2" y="7" width="16" height="10" rx="2"/><path d="M22 11v2"/></svg>
+            </div>
+        </div>
+
+        <div class="nav-header">
+            <button class="back" onclick="history.back()" aria-label="Back">
+                <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+            </button>
+            <h1>Edit Collage</h1>
+            <button class="done">Done</button>
+        </div>
+
+        <div class="canvas-area">
+            <div class="canvas-item selected" style="background:#F5F2EE; top:60px; left:50px;">TO<span class="layer-label">Top</span></div>
+            <div class="canvas-item" style="background:#EDE9E4; top:180px; left:140px;">BT<span class="layer-label">Bottom</span></div>
+            <div class="canvas-item" style="background:#F0EEEC; top:120px; left:220px;">SH<span class="layer-label">Shoes</span></div>
+            <div class="canvas-item" style="background:#E7E5E4; top:240px; left:80px;">AC<span class="layer-label">Accessory</span></div>
+        </div>
+
+        <div class="toolbar">
+            <div class="toolbar-label">Arrangement Tools</div>
+            <div class="tool-row">
+                <button class="tool-btn">
+                    <svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+                    <span>Reset</span>
+                </button>
+                <button class="tool-btn">
+                    <svg viewBox="0 0 24 24"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 9 20.29"/></svg>
+                    <span>Bring Fwd</span>
+                </button>
+                <button class="tool-btn">
+                    <svg viewBox="0 0 24 24"><polyline points="16 7 12 3 8 7"/><line x1="12" y1="3" x2="12" y2="15"/><path d="M3.12 5.91A5 5 0 0 1 6 15h1.26A8 8 0 1 0 15 3.71"/></svg>
+                    <span>Send Bwd</span>
+                </button>
+                <button class="tool-btn">
+                    <svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                    <span>Remove</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

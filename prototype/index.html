@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wardrobe Prototypes</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg: #FAF8F5;
+            --card: #FFFFFF;
+            --text-primary: #1C1917;
+            --text-secondary: #78716C;
+            --accent: #E07A5F;
+            --divider: #E7E5E4;
+        }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 42px;
+            font-style: italic;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 16px;
+            margin-bottom: 40px;
+        }
+        .section {
+            margin-bottom: 32px;
+        }
+        .section h2 {
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 12px;
+        }
+        .proto-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px;
+            background: var(--card);
+            border-radius: 16px;
+            text-decoration: none;
+            color: var(--text-primary);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+        .proto-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+            border-color: var(--divider);
+        }
+        .proto-link .icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: var(--bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+        .proto-link .info {
+            flex: 1;
+        }
+        .proto-link .name {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+        .proto-link .desc {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        .proto-link .arrow {
+            color: var(--text-secondary);
+            font-size: 18px;
+        }
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-left: 6px;
+            vertical-align: middle;
+        }
+        .badge-core {
+            background: #1C1917;
+            color: #fff;
+        }
+        .badge-new {
+            background: var(--accent);
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Wardrobe</h1>
+        <div class="subtitle">UI Prototype Library &mdash; Based on PRD v1.2</div>
+
+        <div class="section">
+            <h2>Core Pages <span class="badge badge-core">RAW</span></h2>
+            <div class="grid">
+                <a class="proto-link" href="../raw.html">
+                    <div class="icon">&#127968;</div>
+                    <div class="info">
+                        <div class="name">Main App</div>
+                        <div class="desc">Today / Closet / Outfits / Calendar / Me</div>
+                    </div>
+                    <span class="arrow">&#8250;</span>
+                </a>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Closet Management</h2>
+            <div class="grid">
+                <a class="proto-link" href="add-clothing.html">
+                    <div class="icon">&#128248;</div>
+                    <div class="info">
+                        <div class="name">Add Clothing</div>
+                        <div class="desc">Photo, category, details form</div>
+                    </div>
+                    <span class="arrow">&#8250;</span>
+                </a>
+                <a class="proto-link" href="clothing-detail.html">
+                    <div class="icon">&#128094;</div>
+                    <div class="info">
+                        <div class="name">Clothing Detail</div>
+                        <div class="desc">View & edit item metadata</div>
+                    </div>
+                    <span class="arrow">&#8250;</span>
+                </a>
+                <a class="proto-link" href="search.html">
+                    <div class="icon">&#128269;</div>
+                    <div class="info">
+                        <div class="name">Search</div>
+                        <div class="desc">Search by name with filters</div>
+                    </div>
+                    <span class="arrow">&#8250;</span>
+                </a>
+                <a class="proto-link" href="category-management.html">
+                    <div class="icon">&#128451;</div>
+                    <div class="info">
+                        <div class="name">Categories</div>
+                        <div class="desc">Manage two-level categories</div>
+                    </div>
+                    <span class="arrow">&#8250;</span>
+                </a>
+                <a class="proto-link" href="recycle-bin.html">
+                    <div class="icon">&#9851;</div>
+                    <div class="info">
+                        <div class="name">Recycle Bin</div>
+                        <div class="desc">Restore deleted items</div>
+                    </div>
+                    <span class="arrow">&#8250;</span>
+                </a>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Outfits</h2>
+            <div class="grid">
+                <a class="proto-link" href="create-outfit.html">
+                    <div class="icon">&#10133;</div>
+                    <div class="info">
+                        <div class="name">Create Outfit</div>
+                        <div class="desc">Multi-select & save combo</div>
+                    </div>
+                    <span class="arrow">&#8250;</span>
+                </a>
+                <a class="proto-link" href="outfit-detail.html">
+                    <div class="icon">&#128083;</div>
+                    <div class="info">
+                        <div class="name">Outfit Detail</div>
+                        <div class="desc">View combo & collage preview</div>
+                    </div>
+                    <span class="arrow">&#8250;</span>
+                </a>
+                <a class="proto-link" href="collage-editor.html">
+                    <div class="icon">&#9998;</div>
+                    <div class="info">
+                        <div class="name">Collage Editor</div>
+                        <div class="desc">Drag & layer arrangement</div>
+                    </div>
+                    <span class="arrow">&#8250;</span>
+                </a>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Calendar & Data</h2>
+            <div class="grid">
+                <a class="proto-link" href="calendar-log.html">
+                    <div class="icon">&#128198;</div>
+                    <div class="info">
+                        <div class="name">Calendar Log</div>
+                        <div class="desc">Add daily outfit record</div>
+                    </div>
+                    <span class="arrow">&#8250;</span>
+                </a>
+                <a class="proto-link" href="statistics.html">
+                    <div class="icon">&#128202;</div>
+                    <div class="info">
+                        <div class="name">Statistics</div>
+                        <div class="desc">Multi-dimensional analytics</div>
+                    </div>
+                    <span class="arrow">&#8250;</span>
+                </a>
+                <a class="proto-link" href="import-backup.html">
+                    <div class="icon">&#128228;</div>
+                    <div class="info">
+                        <div class="name">Import & Backup</div>
+                        <div class="desc">Export / restore .zip data</div>
+                    </div>
+                    <span class="arrow">&#8250;</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

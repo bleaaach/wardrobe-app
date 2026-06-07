@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Add Clothing</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        :root {
+            --bg: #FAF8F5; --card: #FFFFFF; --text-primary: #1C1917;
+            --text-secondary: #78716C; --accent: #E07A5F; --divider: #E7E5E4;
+            --nav-inactive: #A8A29E;
+        }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg); color: var(--text-primary);
+            overflow: hidden; height: 100vh; display: flex;
+            justify-content: center; align-items: center; touch-action: manipulation;
+        }
+        .phone-frame {
+            width: 390px; height: 844px; background: var(--bg);
+            border-radius: 40px; box-shadow: 0 25px 80px rgba(0,0,0,0.15), 0 0 0 12px #1C1917;
+            position: relative; overflow: hidden; display: flex; flex-direction: column;
+        }
+        .notch { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); width: 126px; height: 34px; background: #1C1917; border-radius: 20px; z-index: 100; }
+        .status-bar { height: 44px; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; font-size: 15px; font-weight: 600; letter-spacing: -0.3px; }
+        .status-bar .icons { display: flex; gap: 6px; align-items: center; }
+        .status-bar .icons svg { width: 18px; height: 18px; stroke: var(--text-primary); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+        .nav-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 8px 20px 16px;
+        }
+        .nav-header .back {
+            width: 36px; height: 36px; border-radius: 50%; border: none;
+            background: var(--card); display: flex; align-items: center; justify-content: center;
+            cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        .nav-header .back svg { width: 18px; height: 18px; stroke: var(--text-primary); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        .nav-header h1 {
+            font-family: 'Playfair Display', serif; font-size: 24px; font-style: italic; font-weight: 600;
+        }
+        .nav-header .save {
+            padding: 8px 18px; border-radius: 20px; border: none;
+            background: var(--text-primary); color: #fff; font-size: 13px; font-weight: 600;
+            cursor: pointer; font-family: 'Inter', sans-serif;
+        }
+
+        .content { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 0 20px; scrollbar-width: none; }
+        .content::-webkit-scrollbar { display: none; }
+
+        .photo-area {
+            width: 100%; aspect-ratio: 1;
+            background: var(--card); border-radius: 20px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 12px; margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            border: 2px dashed var(--divider);
+            cursor: pointer; transition: all 0.2s;
+        }
+        .photo-area:active { transform: scale(0.98); }
+        .photo-area .camera-icon {
+            width: 48px; height: 48px; stroke: var(--text-secondary); fill: none;
+            stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round;
+        }
+        .photo-area .hint { font-size: 14px; color: var(--text-secondary); }
+        .photo-area .sub-hint { font-size: 12px; color: var(--nav-inactive); }
+
+        .form-section { margin-bottom: 24px; }
+        .form-section h3 {
+            font-size: 12px; font-weight: 500; text-transform: uppercase;
+            letter-spacing: 3px; color: var(--text-secondary); margin-bottom: 12px;
+        }
+        .form-group { margin-bottom: 16px; }
+        .form-group label {
+            display: block; font-size: 13px; font-weight: 500;
+            color: var(--text-secondary); margin-bottom: 6px;
+        }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%; padding: 12px 14px; border-radius: 12px;
+            border: 1px solid var(--divider); background: var(--card);
+            font-size: 15px; font-family: 'Inter', sans-serif; color: var(--text-primary);
+            outline: none; transition: border 0.2s;
+        }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            border-color: var(--text-primary);
+        }
+        .form-group textarea { min-height: 80px; resize: vertical; }
+
+        .chip-row { display: flex; gap: 8px; flex-wrap: wrap; }
+        .chip {
+            padding: 8px 16px; border-radius: 20px; border: 1px solid var(--divider);
+            background: transparent; font-family: 'Inter', sans-serif;
+            font-size: 13px; font-weight: 500; color: var(--text-secondary);
+            cursor: pointer; white-space: nowrap; transition: all 0.2s;
+        }
+        .chip.active { background: var(--text-primary); color: #fff; border-color: var(--text-primary); }
+
+        .toggle-row {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 14px 0; border-bottom: 1px solid var(--divider);
+        }
+        .toggle-row:last-child { border-bottom: none; }
+        .toggle-label { font-size: 15px; font-weight: 500; }
+        .toggle-switch {
+            width: 48px; height: 28px; border-radius: 14px; background: var(--divider);
+            position: relative; cursor: pointer; transition: background 0.2s; border: none;
+        }
+        .toggle-switch::after {
+            content: ''; position: absolute; top: 2px; left: 2px;
+            width: 24px; height: 24px; border-radius: 50%; background: #fff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.15); transition: transform 0.2s;
+        }
+        .toggle-switch.on { background: var(--text-primary); }
+        .toggle-switch.on::after { transform: translateX(20px); }
+
+        .action-btn {
+            width: 100%; padding: 16px; border-radius: 16px; border: none;
+            background: var(--text-primary); color: #fff; font-size: 16px; font-weight: 600;
+            cursor: pointer; margin-bottom: 12px; font-family: 'Inter', sans-serif;
+            transition: transform 0.15s;
+        }
+        .action-btn.secondary { background: var(--card); color: var(--text-primary); border: 1px solid var(--divider); }
+        .action-btn:active { transform: scale(0.98); }
+    </style>
+</head>
+<body>
+    <div class="phone-frame">
+        <div class="notch"></div>
+        <div class="status-bar">
+            <span class="time">09:41</span>
+            <div class="icons">
+                <svg viewBox="0 0 24 24"><path d="M6 10l0 4"/><path d="M10 8l0 8"/><path d="M14 6l0 12"/><path d="M18 9l0 6"/></svg>
+                <svg viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/></svg>
+                <svg viewBox="0 0 24 24"><rect x="2" y="7" width="16" height="10" rx="2"/><path d="M22 11v2"/></svg>
+            </div>
+        </div>
+
+        <div class="nav-header">
+            <button class="back" onclick="history.back()" aria-label="Back">
+                <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+            </button>
+            <h1>Add Clothing</h1>
+            <button class="save">Save</button>
+        </div>
+
+        <div class="content">
+            <div class="photo-area">
+                <svg class="camera-icon" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                <span class="hint">Tap to take photo or choose from album</span>
+                <span class="sub-hint">Auto-remove background on upload</span>
+            </div>
+
+            <div class="form-section">
+                <h3>Basic Info</h3>
+                <div class="form-group">
+                    <label>Name</label>
+                    <input type="text" placeholder="e.g. White Linen Shirt">
+                </div>
+                <div class="form-group">
+                    <label>Category</label>
+                    <div class="chip-row">
+                        <button class="chip active">Tops</button>
+                        <button class="chip">Bottoms</button>
+                        <button class="chip">Dresses</button>
+                        <button class="chip">Outerwear</button>
+                        <button class="chip">Shoes</button>
+                        <button class="chip">Bags</button>
+                        <button class="chip">Accessories</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Sub-category</label>
+                    <select>
+                        <option>Shirt</option>
+                        <option>T-shirt</option>
+                        <option>Sweater</option>
+                        <option>Blouse</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h3>Details</h3>
+                <div class="form-group">
+                    <label>Brand</label>
+                    <input type="text" placeholder="e.g. Uniqlo">
+                </div>
+                <div class="form-group">
+                    <label>Color</label>
+                    <div class="chip-row">
+                        <button class="chip active">White</button>
+                        <button class="chip">Black</button>
+                        <button class="chip">Beige</button>
+                        <button class="chip">Navy</button>
+                        <button class="chip">Gray</button>
+                        <button class="chip">Red</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Season</label>
+                    <div class="chip-row">
+                        <button class="chip">Spring</button>
+                        <button class="chip active">Summer</button>
+                        <button class="chip">Autumn</button>
+                        <button class="chip">Winter</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Size</label>
+                    <input type="text" placeholder="e.g. M / 38">
+                </div>
+                <div class="form-group">
+                    <label>Price</label>
+                    <input type="number" placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label>Location</label>
+                    <input type="text" placeholder="e.g. Wardrobe A - Shelf 2">
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h3>Preferences</h3>
+                <div class="toggle-row">
+                    <span class="toggle-label">Add to favorites</span>
+                    <button class="toggle-switch" onclick="this.classList.toggle('on')"></button>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <div class="form-group">
+                    <label>Notes</label>
+                    <textarea placeholder="Add any notes about this item..."></textarea>
+                </div>
+            </div>
+
+            <button class="action-btn">Save to Closet</button>
+            <button class="action-btn secondary">Remove Background Preview</button>
+        </div>
+    </div>
+</body>
+</html>

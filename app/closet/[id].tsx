@@ -1,353 +1,1066 @@
-import { View, Text, Pressable, TextInput, StyleSheet, Alert, ScrollView } from "react-native";
-import { AsyncImage } from "../../src/components/AsyncImage";
-import { OutfitPreview } from "../../src/components/OutfitPreview";
-import { IconButton } from "../../src/components/ui/IconButton";
+import {
+  View,
+  Text,
+  TextInput,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Alert,
+  Platform,
+  Share,
+  Linking,
+} from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState, useEffect } from "react";
-import { useClothingStore } from "../../src/store/clothingStore";
 import { Ionicons } from "@expo/vector-icons";
-import { Outfit, Clothing } from "../../src/types";
-import { Colors, Spacing, Radius, FontSize, TouchMin, PressedOpacity } from "../../src/design/tokens";
+import { useClothingStore } from "../../src/store/clothingStore";
+import { Clothing, Outfit } from "../../src/types";
+import { AsyncImage } from "../../src/components/AsyncImage";
+import {
+  Colors,
+  Spacing,
+  Radius,
+  FontSize,
+  TouchMin,
+  PressedOpacity,
+  Shadows,
+} from "../../src/design/tokens";
+import { SEASONS, COLORS, SIZES, SHOE_SIZES } from "../../src/constants/app";
+import { getOutfitsByClothingId } from "../../src/db/database";
 
-const COLORS = ["红","橙","黄","绿","蓝","紫","黑","白","灰","棕","粉","银","金"];
-const SEASONS = ["春","夏","秋","冬"];
-const SIZES = ["XXS","XS","S","M","L","XL","XXL","XXXL"];
-const SHOE_SIZES = Array.from({length:20},(_,i)=>String(35+i));
+const SERIF = Platform.OS === "ios" ? "Georgia" : "serif";
 
-export default function ClothingDetail() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+export default function ClothingDetailScreen() {
   const router = useRouter();
-  const item = useClothingStore((s) => s.items.find((i) => i.id === id));
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const items = useClothingStore((s) => s.items);
   const categories = useClothingStore((s) => s.categories);
   const updateItem = useClothingStore((s) => s.updateItem);
   const deleteItem = useClothingStore((s) => s.deleteItem);
+  const allItems = useClothingStore((s) => s.items);
 
-  const [editing, setEditing] = useState(false);
-  const [name, setName] = useState("");
-  const [catId, setCatId] = useState("");
-  const [brand, setBrand] = useState("");
-  const [color, setColor] = useState("");
-  const [season, setSeason] = useState("");
-  const [location, setLocation] = useState("");
-  const [clothingSize, setClothingSize] = useState("");
-  const [shoeSize, setShoeSize] = useState("");
-  const [price, setPrice] = useState("");
-  const [purchaseLink, setPurchaseLink] = useState("");
-  const [tagsStr, setTagsStr] = useState("");
-  const [notes, setNotes] = useState("");
+  const item = items.find((i) => i.id === id);
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [form, setForm] = useState<Partial<Clothing>>({});
+  const [tagsInput, setTagsInput] = useState("");
   const [relatedOutfits, setRelatedOutfits] = useState<Outfit[]>([]);
-  const [clothingMap, setClothingMap] = useState<Map<string, Clothing>>(new Map());
 
   useEffect(() => {
+    if (!id) return;
+    getOutfitsByClothingId(id).then(setRelatedOutfits);
+  }, [id]);
+
+  const category = categories.find((c) => c.id === item?.categoryId);
+  const parentCategory = categories.find((c) => c.id === category?.parentId);
+  const categoryDisplay = parentCategory
+    ? `${parentCategory.name} · ${category?.name}`
+    : category?.name || "-";
+
+  const tags: string[] = (() => {
+    if (!item) return [];
+    try {
+      const arr = JSON.parse(item.tags || "[]");
+      return Array.isArray(arr) ? arr : [];
+    } catch {
+      return [];
+    }
+  })();
+
+  const startEditing = () => {
     if (!item) return;
-    setName(item.name||""); setCatId(item.categoryId||""); setBrand(item.brand||"");
-    setColor(item.color||""); setSeason(item.season||""); setLocation(item.location||"");
-    setClothingSize(item.clothingSize||""); setShoeSize(item.shoeSize||""); setPrice(item.price||"");
-    setPurchaseLink(item.purchaseLink||""); setTagsStr(item.tags||"[]"); setNotes(item.notes||"");
-    (async () => {
-      const outfits = await useClothingStore.getState().getRelatedOutfits(item.id);
-      setRelatedOutfits(outfits);
-      const all = useClothingStore.getState().items;
-      const map = new Map<string, Clothing>();
-      for (const c of all) map.set(c.id, c);
-      setClothingMap(map);
-    })();
-  }, [item?.id]);
-
-  if (!item) return <View style={S.centered}><Text style={{color:Colors.textTertiary}}>不存在</Text></View>;
-
-  const cat = categories.find((c) => c.id === catId);
-  const wearCount = item.wearCount || 0;
-  const costPerWear = price && wearCount > 0 ? (parseFloat(price)/wearCount).toFixed(2) : "-";
-
-  const save = async () => {
-    await updateItem(id!, { name, categoryId: catId, brand, color, season, location, clothingSize, shoeSize, price, purchaseLink, tags: tagsStr, notes });
-    setEditing(false);
+    setForm({ ...item });
+    try {
+      const arr = JSON.parse(item.tags || "[]");
+      setTagsInput(Array.isArray(arr) ? arr.join(", ") : "");
+    } catch {
+      setTagsInput("");
+    }
+    setIsEditing(true);
   };
 
-  const getOutfitItems = (o: Outfit) => {
-    const ids: string[] = JSON.parse(o.clothingIds || "[]");
-    return ids.map((id) => clothingMap.get(id)).filter(Boolean) as Clothing[];
+  const cancelEditing = () => {
+    setIsEditing(false);
+    setForm({});
+    setTagsInput("");
   };
 
-  const seasonToggle = (s: string) => {
-    const parts = season ? season.split("/") : [];
-    setSeason(parts.includes(s) ? parts.filter(p=>p!==s).join("/") : [...parts, s].join("/"));
+  const saveEditing = async () => {
+    if (!item || !id) return;
+    const parsedTags = tagsInput
+      .split(/,|，/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    await updateItem(id, {
+      ...form,
+      tags: JSON.stringify(parsedTags),
+    });
+    setIsEditing(false);
   };
 
-  const Field = ({ label, value, children }: {label:string, value?:string, children?:any}) => (
-    <View style={S.fieldWrap}>
-      <Text style={S.fieldLabel}>{label}</Text>
-      {editing && children ? children : <Text style={S.value}>{value || "未设置"}</Text>}
-    </View>
-  );
+  const handleDelete = () => {
+    Alert.alert("Delete Item", "Are you sure you want to delete this item?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          await deleteItem(id);
+          router.back();
+        },
+      },
+    ]);
+  };
 
-  const ChipGroup = ({ options, selected, onToggle }: {options:string[], selected:string, onToggle:(v:string)=>void}) => (
-    <View style={S.chips}>
-      {options.map((o) => (
-        <Pressable key={o} style={[S.chip, selected.includes(o)&&S.chipActive]} onPress={()=>onToggle(o)}>
-          <Text style={[S.chipText, selected.includes(o)&&S.chipActiveText]}>{o}</Text>
-        </Pressable>
-      ))}
-    </View>
-  );
+  const handleShare = async () => {
+    if (!item) return;
+    try {
+      await Share.share({
+        message: `Check out ${item.name} in my wardrobe!`,
+        url: item.purchaseLink || undefined,
+      });
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleMore = () => {
+    if (!item) return;
+    Alert.alert(item.name, undefined, [
+      { text: "Edit", onPress: startEditing },
+      { text: "Delete", style: "destructive", onPress: handleDelete },
+      { text: "Cancel", style: "cancel" },
+    ]);
+  };
+
+  const toggleFavorite = () => {
+    if (!item || !id) return;
+    updateItem(id, { favorite: item.favorite ? 0 : 1 });
+  };
+
+  const handleWearToday = () => {
+    if (!item || !id) return;
+    updateItem(id, { wearCount: (item.wearCount || 0) + 1 });
+  };
+
+  const getOutfitThumbnails = (outfit: Outfit): Clothing[] => {
+    try {
+      const ids: string[] = JSON.parse(outfit.clothingIds || "[]");
+      return ids
+        .slice(0, 3)
+        .map((cid) => allItems.find((i) => i.id === cid))
+        .filter(Boolean) as Clothing[];
+    } catch {
+      return [];
+    }
+  };
+
+  if (!item) {
+    return (
+      <View style={[styles.container, { justifyContent: "center", alignItems: "center" }]}>
+        <Text style={{ color: Colors.textSecondary }}>Item not found</Text>
+      </View>
+    );
+  }
+
+  if (isEditing) {
+    return (
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <Pressable style={styles.backBtn} onPress={cancelEditing}>
+            <Ionicons name="close" size={20} color={Colors.textPrimary} />
+          </Pressable>
+          <Text style={styles.headerTitle}>Edit Item</Text>
+          <Pressable style={styles.headerSaveBtn} onPress={saveEditing}>
+            <Text style={styles.headerSaveText}>Save</Text>
+          </Pressable>
+        </View>
+
+        {/* Basic Info */}
+        <Text style={styles.sectionTitle}>Basic Info</Text>
+        <View style={styles.card}>
+          <Text style={styles.inputLabel}>Name</Text>
+          <TextInput
+            style={styles.input}
+            value={form.name || ""}
+            onChangeText={(t) => setForm((f) => ({ ...f, name: t }))}
+            placeholder="e.g. White Linen Shirt"
+            placeholderTextColor={Colors.textTertiary}
+          />
+
+          <Text style={styles.inputLabel}>Category</Text>
+          {(() => {
+            const parents = categories
+              .filter((c) => !c.parentId)
+              .sort((a, b) => a.sortOrder - b.sortOrder);
+            return parents.map((p) => (
+              <View key={p.id} style={{ marginBottom: Spacing.md }}>
+                <Text style={styles.parentLabel}>{p.name}</Text>
+                <View style={styles.chipRow}>
+                  {categories
+                    .filter((c) => c.parentId === p.id)
+                    .sort((a, b) => a.sortOrder - b.sortOrder)
+                    .map((cat) => {
+                      const active = form.categoryId === cat.id;
+                      return (
+                        <Pressable
+                          key={cat.id}
+                          style={[styles.chip, active && styles.chipActive]}
+                          onPress={() =>
+                            setForm((f) => ({
+                              ...f,
+                              categoryId: active ? "" : cat.id,
+                            }))
+                          }
+                        >
+                          <Text
+                            style={[
+                              styles.chipText,
+                              active && styles.chipActiveText,
+                            ]}
+                          >
+                            {cat.name}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                </View>
+              </View>
+            ));
+          })()}
+        </View>
+
+        {/* Details */}
+        <Text style={styles.sectionTitle}>Details</Text>
+        <View style={styles.card}>
+          <Text style={styles.inputLabel}>Brand</Text>
+          <TextInput
+            style={styles.input}
+            value={form.brand || ""}
+            onChangeText={(t) => setForm((f) => ({ ...f, brand: t }))}
+            placeholder="e.g. Uniqlo"
+            placeholderTextColor={Colors.textTertiary}
+          />
+
+          <Text style={styles.inputLabel}>Color</Text>
+          <View style={styles.chipRow}>
+            {COLORS.map((c) => {
+              const active = form.color === c;
+              return (
+                <Pressable
+                  key={c}
+                  style={[styles.chip, active && styles.chipActive]}
+                  onPress={() =>
+                    setForm((f) => ({ ...f, color: active ? "" : c }))
+                  }
+                >
+                  <Text
+                    style={[styles.chipText, active && styles.chipActiveText]}
+                  >
+                    {c}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          <Text style={styles.inputLabel}>Season</Text>
+          <View style={styles.chipRow}>
+            {SEASONS.map((s) => {
+              const active = form.season === s;
+              return (
+                <Pressable
+                  key={s}
+                  style={[styles.chip, active && styles.chipActive]}
+                  onPress={() =>
+                    setForm((f) => ({ ...f, season: active ? "" : s }))
+                  }
+                >
+                  <Text
+                    style={[styles.chipText, active && styles.chipActiveText]}
+                  >
+                    {s}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          <Text style={styles.inputLabel}>Clothing Size</Text>
+          <View style={styles.chipRow}>
+            {SIZES.map((s) => {
+              const active = form.clothingSize === s;
+              return (
+                <Pressable
+                  key={s}
+                  style={[styles.chip, active && styles.chipActive]}
+                  onPress={() =>
+                    setForm((f) => ({
+                      ...f,
+                      clothingSize: active ? "" : s,
+                    }))
+                  }
+                >
+                  <Text
+                    style={[styles.chipText, active && styles.chipActiveText]}
+                  >
+                    {s}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          <Text style={styles.inputLabel}>Shoe Size</Text>
+          <View style={[styles.chipRow, { marginBottom: Spacing.lg }]}>
+            {SHOE_SIZES.map((s) => {
+              const active = form.shoeSize === s;
+              return (
+                <Pressable
+                  key={s}
+                  style={[styles.chip, active && styles.chipActive]}
+                  onPress={() =>
+                    setForm((f) => ({ ...f, shoeSize: active ? "" : s }))
+                  }
+                >
+                  <Text
+                    style={[styles.chipText, active && styles.chipActiveText]}
+                  >
+                    {s}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          <Text style={styles.inputLabel}>Price</Text>
+          <TextInput
+            style={styles.input}
+            value={form.price || ""}
+            onChangeText={(t) => setForm((f) => ({ ...f, price: t }))}
+            placeholder="0.00"
+            placeholderTextColor={Colors.textTertiary}
+            keyboardType="decimal-pad"
+          />
+
+          <Text style={styles.inputLabel}>Location</Text>
+          <TextInput
+            style={styles.input}
+            value={form.location || ""}
+            onChangeText={(t) => setForm((f) => ({ ...f, location: t }))}
+            placeholder="e.g. Wardrobe A - Shelf 2"
+            placeholderTextColor={Colors.textTertiary}
+          />
+
+          <Text style={styles.inputLabel}>Purchase Link</Text>
+          <TextInput
+            style={styles.input}
+            value={form.purchaseLink || ""}
+            onChangeText={(t) => setForm((f) => ({ ...f, purchaseLink: t }))}
+            placeholder="https://..."
+            placeholderTextColor={Colors.textTertiary}
+            autoCapitalize="none"
+            keyboardType="url"
+          />
+        </View>
+
+        {/* Tags */}
+        <Text style={styles.sectionTitle}>Tags</Text>
+        <View style={styles.card}>
+          <TextInput
+            style={styles.input}
+            value={tagsInput}
+            onChangeText={setTagsInput}
+            placeholder="Oversized, Casual, Work"
+            placeholderTextColor={Colors.textTertiary}
+          />
+        </View>
+
+        {/* Notes */}
+        <Text style={styles.sectionTitle}>Notes</Text>
+        <View style={[styles.card, { padding: 0, overflow: "hidden" }]}>
+          <TextInput
+            style={styles.textarea}
+            value={form.notes || ""}
+            onChangeText={(t) => setForm((f) => ({ ...f, notes: t }))}
+            placeholder="Add any notes about this item..."
+            placeholderTextColor={Colors.textTertiary}
+            multiline
+            numberOfLines={4}
+            textAlignVertical="top"
+          />
+        </View>
+
+        {/* Wear Count (read-only in edit) */}
+        <Text style={styles.sectionTitle}>Wear Count</Text>
+        <View style={styles.wearBar}>
+          <View>
+            <Text style={styles.wearCount}>{item.wearCount || 0}</Text>
+            <Text style={styles.wearLabel}>Times worn this year</Text>
+          </View>
+          <Pressable style={styles.wearBtn} onPress={handleWearToday}>
+            <Text style={styles.wearBtnText}>+ Wear Today</Text>
+          </Pressable>
+        </View>
+
+        <View style={{ height: 40 }} />
+      </ScrollView>
+    );
+  }
 
   return (
-    <ScrollView style={S.container} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
+    >
       {/* Hero Image */}
-      <View style={S.imageWrap}>
-        <AsyncImage uri={item.imageUri} style={S.image} />
-        <View style={S.imageGradient} />
-        <View style={S.overlayActions}>
-          <IconButton name="close" color={Colors.textPrimary} onPress={() => router.back()} />
-          <View style={{ flexDirection: "row", gap: 8 }}>
-            <IconButton name={item.favorite ? "heart" : "heart-outline"} color={item.favorite ? Colors.danger : Colors.textPrimary} onPress={() => updateItem(id!, { favorite: item.favorite ? 0 : 1 })} />
-            <IconButton name={editing ? "checkmark" : "create-outline"} color={editing ? Colors.accent : Colors.textPrimary} onPress={() => editing ? save() : setEditing(true)} />
+      <View style={styles.hero}>
+        <AsyncImage uri={item.imageUri} style={styles.heroImage} />
+        <View style={styles.heroOverlay}>
+          <Pressable style={styles.overlayBtn} onPress={() => router.back()}>
+            <Ionicons
+              name="chevron-back"
+              size={20}
+              color={Colors.textPrimary}
+            />
+          </Pressable>
+          <View style={{ flexDirection: "row", gap: Spacing.sm }}>
+            <Pressable style={styles.overlayBtn} onPress={handleShare}>
+              <Ionicons
+                name="share-outline"
+                size={18}
+                color={Colors.textPrimary}
+              />
+            </Pressable>
+            <Pressable style={styles.overlayBtn} onPress={handleMore}>
+              <Ionicons
+                name="ellipsis-horizontal"
+                size={18}
+                color={Colors.textPrimary}
+              />
+            </Pressable>
           </View>
         </View>
       </View>
 
-      <View style={S.info}>
-        {/* Name & Category */}
-        {editing ? (
-          <TextInput style={S.nameInput} value={name} onChangeText={setName} placeholder="名称" placeholderTextColor={Colors.textTertiary} />
-        ) : (
-          <>
-            <Text style={S.name}>{name || "未命名"}</Text>
-            <View style={S.catBadge}>
-              <Text style={S.catText}>{cat?.icon} {cat?.name}</Text>
-            </View>
-          </>
-        )}
-
-        {/* Stats Cards */}
-        {!editing && (
-          <View style={S.statsRow}>
-            <View style={S.statBox}>
-              <Ionicons name="sync-outline" size={18} color={Colors.accent} />
-              <Text style={S.statNum}>{wearCount}</Text>
-              <Text style={S.statLabel}>穿着次数</Text>
-            </View>
-            <View style={S.statBox}>
-              <Ionicons name="cash-outline" size={18} color={Colors.accent} />
-              <Text style={S.statNum}>¥{costPerWear}</Text>
-              <Text style={S.statLabel}>单次成本</Text>
-            </View>
-            {item.price ? (
-              <View style={S.statBox}>
-                <Ionicons name="pricetag-outline" size={18} color={Colors.accent} />
-                <Text style={S.statNum}>¥{item.price}</Text>
-                <Text style={S.statLabel}>购入价格</Text>
-              </View>
-            ) : null}
+      {/* Detail Body */}
+      <View style={styles.detailBody}>
+        {/* Header */}
+        <View style={styles.detailHeader}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.categoryLabel}>{categoryDisplay}</Text>
+            <Text style={styles.name} numberOfLines={2}>
+              {item.name || "Untitled"}
+            </Text>
           </View>
-        )}
+          <Pressable
+            style={[styles.favoriteBtn, item.favorite ? { borderColor: Colors.accent } : {}]}
+            onPress={toggleFavorite}
+          >
+            <Ionicons
+              name={item.favorite ? "heart" : "heart-outline"}
+              size={20}
+              color={item.favorite ? Colors.accent : Colors.textSecondary}
+            />
+          </Pressable>
+        </View>
 
-        {/* Category (edit) */}
-        {editing && (
-          <>
-            <Text style={S.fieldLabel}>分类</Text>
-            {categories.filter((c) => !c.parentId).sort((a, b) => a.sortOrder - b.sortOrder).map((p) => (
-              <View key={p.id} style={{ marginBottom: Spacing.md }}>
-                <Text style={S.parentLabel}>{p.name}</Text>
-                <View style={S.chips}>
-                  {categories.filter((c) => c.parentId === p.id).sort((a, b) => a.sortOrder - b.sortOrder).map((c) => {
-                    const isActive = catId === c.id;
-                    return (
-                      <Pressable key={c.id} style={[S.chip, isActive && S.chipActive]} onPress={() => setCatId(c.id)}>
-                        <Text style={[S.chipText, isActive && S.chipActiveText]}>{c.name}</Text>
-                      </Pressable>
-                    );
-                  })}
+        {/* Meta Grid */}
+        <View style={styles.metaGrid}>
+          <View style={styles.metaCard}>
+            <Text style={styles.metaLabel}>Brand</Text>
+            <Text style={styles.metaValue}>{item.brand || "-"}</Text>
+          </View>
+          <View style={styles.metaCard}>
+            <Text style={styles.metaLabel}>Color</Text>
+            <Text style={styles.metaValue}>{item.color || "-"}</Text>
+          </View>
+          <View style={styles.metaCard}>
+            <Text style={styles.metaLabel}>Season</Text>
+            <Text style={styles.metaValue}>{item.season || "-"}</Text>
+          </View>
+          <View style={styles.metaCard}>
+            <Text style={styles.metaLabel}>Size</Text>
+            <Text style={styles.metaValue}>
+              {item.clothingSize || item.shoeSize || "-"}
+            </Text>
+          </View>
+          <View style={styles.metaCard}>
+            <Text style={styles.metaLabel}>Price</Text>
+            <Text style={[styles.metaValue, { color: Colors.accent }]}>
+              {item.price || "-"}
+            </Text>
+          </View>
+          <View style={styles.metaCard}>
+            <Text style={styles.metaLabel}>Location</Text>
+            <Text style={styles.metaValue}>{item.location || "-"}</Text>
+          </View>
+          {item.purchaseLink ? (
+            <View style={styles.metaCard}>
+              <Text style={styles.metaLabel}>Purchase</Text>
+              <Pressable
+                onPress={() =>
+                  Linking.openURL(item.purchaseLink).catch(() => {})
+                }
+              >
+                <Text
+                  style={[styles.metaValue, { color: Colors.accent }]}
+                  numberOfLines={1}
+                >
+                  Open Link
+                </Text>
+              </Pressable>
+            </View>
+          ) : null}
+        </View>
+
+        {/* Tags */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Tags</Text>
+          <View style={styles.tagRow}>
+            {tags.length > 0 ? (
+              tags.map((t) => (
+                <View key={t} style={styles.tag}>
+                  <Text style={styles.tagText}>{t}</Text>
                 </View>
-              </View>
-            ))}
-          </>
-        )}
+              ))
+            ) : (
+              <Text style={styles.emptyText}>No tags</Text>
+            )}
+          </View>
+        </View>
 
-        {/* Info Card */}
-        <View style={S.infoCard}>
-          <Field label="品牌">{editing && <TextInput style={S.input} value={brand} onChangeText={setBrand} placeholder="Nike" placeholderTextColor={Colors.textTertiary} />}</Field>
+        {/* Wear Count */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Wear Count</Text>
+          <View style={styles.wearBar}>
+            <View>
+              <Text style={styles.wearCount}>{item.wearCount || 0}</Text>
+              <Text style={styles.wearLabel}>Times worn this year</Text>
+            </View>
+            <Pressable style={styles.wearBtn} onPress={handleWearToday}>
+              <Text style={styles.wearBtnText}>+ Wear Today</Text>
+            </Pressable>
+          </View>
+        </View>
 
-          <Field label="颜色">{editing && <ChipGroup options={COLORS} selected={color} onToggle={(c)=>setColor(color===c?"":c)} />}</Field>
-          {!editing && <Field label="颜色" value={color} />}
-
-          <Field label="季节">{editing && <ChipGroup options={SEASONS} selected={season} onToggle={seasonToggle} />}</Field>
-          {!editing && <Field label="季节" value={season} />}
-
-          <Field label="存放位置">{editing && <TextInput style={S.input} value={location} onChangeText={setLocation} placeholder="衣柜上层" placeholderTextColor={Colors.textTertiary} />}</Field>
-          {!editing && <Field label="存放位置" value={location} />}
-
-          <Field label="服装尺码">{editing && <ChipGroup options={SIZES} selected={clothingSize} onToggle={(s)=>setClothingSize(clothingSize===s?"":s)} />}</Field>
-          {!editing && <Field label="服装尺码" value={clothingSize} />}
-
-          <Field label="鞋码">{editing && <ChipGroup options={SHOE_SIZES} selected={shoeSize} onToggle={(s)=>setShoeSize(shoeSize===s?"":s)} />}</Field>
-          {!editing && <Field label="鞋码" value={shoeSize} />}
-
-          <Field label="价格 (¥)">{editing && <TextInput style={S.input} value={price} onChangeText={setPrice} placeholder="299" keyboardType="decimal-pad" placeholderTextColor={Colors.textTertiary} />}</Field>
-          {!editing && <Field label="价格" value={price ? `¥${price}` : "未设置"} />}
-
-          <Field label="购买链接">{editing && <TextInput style={S.input} value={purchaseLink} onChangeText={setPurchaseLink} placeholder="https://..." placeholderTextColor={Colors.textTertiary} />}</Field>
-
-          <Field label="备注">{editing && <TextInput style={[S.input, S.notesInput]} value={notes} onChangeText={setNotes} placeholder="备注信息" placeholderTextColor={Colors.textTertiary} multiline />}</Field>
-          {!editing && <Field label="备注" value={notes} />}
+        {/* Notes */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Notes</Text>
+          <View style={styles.noteBox}>
+            <Text style={styles.noteText}>
+              {item.notes || "No notes added."}
+            </Text>
+          </View>
         </View>
 
         {/* Related Outfits */}
-        {!editing && relatedOutfits.length > 0 && (
-          <View style={{ marginTop: Spacing.xxl }}>
-            <Text style={S.section}>相关搭配 ({relatedOutfits.length})</Text>
-            <View style={{ gap: Spacing.md }}>
-              {relatedOutfits.map((o) => {
-                const items = getOutfitItems(o);
+        {relatedOutfits.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Related Outfits</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.outfitRow}
+            >
+              {relatedOutfits.map((outfit) => {
+                const thumbs = getOutfitThumbnails(outfit);
                 return (
                   <Pressable
-                    key={o.id}
-                    style={({ pressed }) => [S.outfitCard, pressed && S.pressed]}
-                    onPress={() => router.push(`/outfits/${o.id}`)}
+                    key={outfit.id}
+                    style={styles.outfitCard}
+                    onPress={() => router.push(`/outfits/${outfit.id}`)}
                   >
-                    <OutfitPreview items={items} size={80} />
-                    <View style={{ marginLeft: Spacing.lg, flex: 1 }}>
-                      <Text style={S.outfitName}>{o.name || "未命名搭配"}</Text>
-                      <Text style={S.outfitMeta}>{items.length} 件衣物</Text>
+                    <View style={styles.outfitThumbs}>
+                      {thumbs.length > 0 ? (
+                        thumbs.map((t, idx) => (
+                          <AsyncImage
+                            key={t.id + idx}
+                            uri={t.imageUri}
+                            style={styles.outfitThumb}
+                          />
+                        ))
+                      ) : (
+                        <View style={styles.outfitThumbPlaceholder}>
+                          <Ionicons
+                            name="shirt-outline"
+                            size={20}
+                            color={Colors.textTertiary}
+                          />
+                        </View>
+                      )}
                     </View>
-                    <Ionicons name="chevron-forward" size={18} color={Colors.textTertiary} />
+                    <Text style={styles.outfitName} numberOfLines={1}>
+                      {outfit.name || "Untitled"}
+                    </Text>
+                    <Text style={styles.outfitMeta}>
+                      {(() => {
+                        try {
+                          const ids: string[] = JSON.parse(
+                            outfit.clothingIds || "[]"
+                          );
+                          return `${ids.length} items`;
+                        } catch {
+                          return "0 items";
+                        }
+                      })()}
+                    </Text>
                   </Pressable>
                 );
               })}
-            </View>
+            </ScrollView>
           </View>
         )}
 
-        {/* Delete */}
-        <Pressable style={({pressed})=>[S.deleteBtn, pressed&&S.pressed]} onPress={() => {
-          Alert.alert("删除", "确定删除？", [{ text: "取消", style: "cancel" }, { text: "删除", style: "destructive", onPress: async () => { await deleteItem(id!); router.back(); } }]);
-        }}>
-          <Ionicons name="trash-outline" size={20} color={Colors.danger} />
-          <Text style={S.deleteText}>删除衣物</Text>
+        {/* AI Try-On */}
+        <Pressable
+          style={({ pressed }) => [
+            styles.tryOnBtn,
+            pressed && { opacity: PressedOpacity },
+          ]}
+          onPress={() => router.push(`/closet/try-on?id=${item.id}`)}
+        >
+          <Ionicons name="sparkles" size={18} color={Colors.textPrimary} />
+          <Text style={styles.tryOnBtnText}>AI Try-On</Text>
         </Pressable>
-        <View style={{height:60}} />
+      </View>
+
+      {/* Bottom Actions */}
+      <View style={styles.bottomActions}>
+        <Pressable
+          style={({ pressed }) => [
+            styles.editBtn,
+            pressed && { opacity: PressedOpacity },
+          ]}
+          onPress={startEditing}
+        >
+          <Text style={styles.editBtnText}>Edit</Text>
+        </Pressable>
+        <Pressable
+          style={({ pressed }) => [
+            styles.deleteBtn,
+            pressed && { opacity: PressedOpacity },
+          ]}
+          onPress={handleDelete}
+        >
+          <Text style={styles.deleteBtnText}>Delete</Text>
+        </Pressable>
       </View>
     </ScrollView>
   );
 }
 
-const S = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.bg },
-  content: { paddingBottom: 40 },
-  centered: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: Colors.bg },
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: Colors.bg,
+  },
+  content: {
+    paddingBottom: Spacing.xxl,
+  },
 
-  imageWrap: { position: "relative", width: "100%", height: 420 },
-  image: { width: "100%", height: "100%", backgroundColor: Colors.surface },
-  imageGradient: {
+  // Header (edit mode)
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: Spacing.sm,
+    marginBottom: Spacing.lg,
+    paddingHorizontal: Spacing.xl,
+    paddingTop: Platform.OS === "ios" ? Spacing.xxl + 8 : Spacing.xl,
+  },
+  backBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
+    ...Shadows.sm,
+  },
+  headerTitle: {
+    fontFamily: SERIF,
+    fontSize: FontSize.lg,
+    fontStyle: "italic",
+    fontWeight: "600",
+    color: Colors.textPrimary,
+  },
+  headerSaveBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 18,
+    borderRadius: 20,
+    backgroundColor: Colors.textPrimary,
+  },
+  headerSaveText: {
+    color: Colors.textInverse,
+    fontSize: FontSize.sm,
+    fontWeight: "600",
+  },
+
+  // Hero
+  hero: {
+    width: "100%",
+    aspectRatio: 1,
+    backgroundColor: Colors.surface,
+    position: "relative",
+  },
+  heroImage: {
+    width: "100%",
+    height: "100%",
+  },
+  heroOverlay: {
     position: "absolute",
-    bottom: 0,
+    top: 0,
     left: 0,
     right: 0,
-    height: 160,
-    backgroundColor: "rgba(10,10,10,0.7)",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Platform.OS === "ios" ? 48 : 24,
+    paddingBottom: Spacing.lg,
   },
-  overlayActions: { position: "absolute", top: 48, left: 16, right: 16, flexDirection: "row", justifyContent: "space-between", zIndex: 10 },
+  overlayBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(255,255,255,0.9)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
 
-  info: { padding: Spacing.xl, paddingTop: 0, marginTop: -50 },
-  name: { fontSize: FontSize.xxl, fontWeight: "800", color: Colors.textPrimary, letterSpacing: -0.5 },
-  nameInput: {
-    fontSize: FontSize.xxl,
-    fontWeight: "800",
-    color: Colors.textPrimary,
-    borderBottomWidth: 1,
-    borderColor: Colors.border,
-    paddingVertical: 8,
-    marginBottom: Spacing.md,
+  // Detail Body
+  detailBody: {
+    padding: Spacing.xl,
   },
-  catBadge: {
-    alignSelf: "flex-start",
-    backgroundColor: Colors.accentLight,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: Radius.full,
-    marginTop: Spacing.sm,
+  detailHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
     marginBottom: Spacing.xl,
   },
-  catText: { fontSize: FontSize.sm, color: Colors.accent, fontWeight: "600" },
+  categoryLabel: {
+    fontSize: FontSize.xs,
+    fontWeight: "500",
+    textTransform: "uppercase",
+    letterSpacing: 2,
+    color: Colors.textSecondary,
+    marginBottom: Spacing.xs,
+  },
+  name: {
+    fontFamily: SERIF,
+    fontSize: FontSize.xl,
+    fontStyle: "italic",
+    fontWeight: "600",
+    lineHeight: FontSize.xl * 1.2,
+    color: Colors.textPrimary,
+  },
+  favoriteBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: Spacing.md,
+  },
 
-  statsRow: { flexDirection: "row", gap: Spacing.md, marginBottom: Spacing.xl },
-  statBox: {
-    flex: 1,
-    backgroundColor: Colors.surfaceElevated,
+  // Meta Grid
+  metaGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: Spacing.md,
+    marginBottom: Spacing.xl,
+  },
+  metaCard: {
+    backgroundColor: Colors.surface,
     borderRadius: Radius.lg,
     padding: Spacing.lg,
-    alignItems: "center",
-    gap: 6,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    ...Shadows.sm,
+    width: "47%",
+    flexGrow: 1,
   },
-  statNum: { fontSize: FontSize.lg, fontWeight: "800", color: Colors.textPrimary },
-  statLabel: { fontSize: FontSize.xs, color: Colors.textSecondary },
-
-  infoCard: {
-    backgroundColor: Colors.surfaceElevated,
-    borderRadius: Radius.xl,
-    padding: Spacing.xl,
-    borderWidth: 1,
-    borderColor: Colors.border,
+  metaLabel: {
+    fontSize: FontSize.xs,
+    fontWeight: "500",
+    textTransform: "uppercase",
+    letterSpacing: 1.5,
+    color: Colors.textSecondary,
+    marginBottom: Spacing.xs,
   },
-  fieldWrap: { marginTop: Spacing.lg },
-  fieldLabel: { fontSize: FontSize.sm, fontWeight: "600", color: Colors.textSecondary, marginBottom: Spacing.sm },
-  parentLabel: { fontSize: FontSize.xs, fontWeight: "700", color: Colors.textTertiary, marginBottom: Spacing.sm, textTransform: "uppercase", letterSpacing: 0.5 },
-  value: { fontSize: FontSize.base, color: Colors.textPrimary },
-
-  input: {
+  metaValue: {
     fontSize: FontSize.base,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderColor: Colors.border,
+    fontWeight: "600",
     color: Colors.textPrimary,
-    marginBottom: Spacing.sm,
   },
-  notesInput: { height: 80, textAlignVertical: "top" },
 
-  chips: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.sm, marginBottom: Spacing.sm },
-  chip: {
+  // Sections
+  section: {
+    marginBottom: Spacing.xl,
+  },
+  sectionTitle: {
+    fontSize: FontSize.xs,
+    fontWeight: "500",
+    textTransform: "uppercase",
+    letterSpacing: 3,
+    color: Colors.textSecondary,
+    marginBottom: Spacing.md,
+  },
+
+  // Tags
+  tagRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: Spacing.sm,
+  },
+  tag: {
+    paddingVertical: 6,
     paddingHorizontal: 14,
-    paddingVertical: 8,
     borderRadius: Radius.full,
     backgroundColor: Colors.surface,
-    minHeight: TouchMin,
-    justifyContent: "center",
     borderWidth: 1,
     borderColor: Colors.border,
   },
-  chipActive: { backgroundColor: Colors.accent, borderColor: Colors.accent },
-  chipText: { fontSize: FontSize.sm, color: Colors.textSecondary },
-  chipActiveText: { color: Colors.textInverse, fontWeight: "600" },
+  tagText: {
+    fontSize: FontSize.sm,
+    color: Colors.textSecondary,
+  },
+  emptyText: {
+    fontSize: FontSize.sm,
+    color: Colors.textTertiary,
+  },
 
-  section: { fontSize: FontSize.lg, fontWeight: "700", color: Colors.textPrimary, marginBottom: Spacing.md },
-  outfitCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: Colors.surfaceElevated,
+  // Wear Bar
+  wearBar: {
+    backgroundColor: Colors.surface,
     borderRadius: Radius.lg,
     padding: Spacing.lg,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    ...Shadows.sm,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
-  outfitName: { fontSize: FontSize.base, fontWeight: "600", color: Colors.textPrimary },
-  outfitMeta: { fontSize: FontSize.sm, color: Colors.textTertiary, marginTop: 4 },
+  wearCount: {
+    fontFamily: SERIF,
+    fontSize: 32,
+    fontWeight: "600",
+    color: Colors.textPrimary,
+    lineHeight: 34,
+  },
+  wearLabel: {
+    fontSize: FontSize.sm,
+    color: Colors.textSecondary,
+    marginTop: Spacing.xs,
+  },
+  wearBtn: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: Radius.full,
+    backgroundColor: Colors.textPrimary,
+  },
+  wearBtnText: {
+    color: Colors.textInverse,
+    fontSize: FontSize.sm,
+    fontWeight: "600",
+  },
 
-  deleteBtn: {
+  // Notes
+  noteBox: {
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.lg,
+    padding: Spacing.lg,
+    ...Shadows.sm,
+  },
+  noteText: {
+    fontSize: FontSize.base,
+    color: Colors.textSecondary,
+    lineHeight: FontSize.base * 1.6,
+  },
+
+  // Related Outfits
+  outfitRow: {
+    gap: Spacing.md,
+    paddingRight: Spacing.xl,
+  },
+  outfitCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.lg,
+    padding: Spacing.md,
+    ...Shadows.sm,
+    width: 140,
+  },
+  outfitThumbs: {
+    flexDirection: "row",
+    gap: Spacing.xs,
+    marginBottom: Spacing.sm,
+  },
+  outfitThumb: {
+    width: 36,
+    height: 44,
+    borderRadius: Radius.sm,
+    backgroundColor: Colors.bg,
+  },
+  outfitThumbPlaceholder: {
+    width: 36,
+    height: 44,
+    borderRadius: Radius.sm,
+    backgroundColor: Colors.bg,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  outfitName: {
+    fontSize: FontSize.sm,
+    fontWeight: "600",
+    color: Colors.textPrimary,
+  },
+  outfitMeta: {
+    fontSize: FontSize.xs,
+    color: Colors.textTertiary,
+    marginTop: Spacing.xs,
+  },
+
+  // Try-On
+  tryOnBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
+    gap: Spacing.sm,
     paddingVertical: 14,
-    minHeight: TouchMin,
+    backgroundColor: Colors.surfaceElevated,
     borderRadius: Radius.lg,
-    backgroundColor: Colors.surface,
-    marginTop: Spacing.xxl,
     borderWidth: 1,
     borderColor: Colors.border,
+    marginBottom: Spacing.xl,
   },
-  pressed: { opacity: PressedOpacity },
-  deleteText: { color: Colors.danger, fontSize: FontSize.base, fontWeight: "500" },
+  tryOnBtnText: {
+    color: Colors.textPrimary,
+    fontSize: FontSize.base,
+    fontWeight: "600",
+  },
+
+  // Bottom Actions
+  bottomActions: {
+    flexDirection: "row",
+    gap: Spacing.md,
+    paddingHorizontal: Spacing.xl,
+    paddingTop: Spacing.lg,
+    paddingBottom: 28,
+  },
+  editBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: Radius.lg,
+    backgroundColor: Colors.textPrimary,
+    alignItems: "center",
+    minHeight: TouchMin,
+    justifyContent: "center",
+  },
+  editBtnText: {
+    color: Colors.textInverse,
+    fontSize: FontSize.md,
+    fontWeight: "600",
+  },
+  deleteBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: Radius.lg,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    alignItems: "center",
+    minHeight: TouchMin,
+    justifyContent: "center",
+  },
+  deleteBtnText: {
+    color: Colors.danger,
+    fontSize: FontSize.md,
+    fontWeight: "600",
+  },
+
+  // Edit mode inputs
+  card: {
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.lg,
+    padding: Spacing.lg,
+    marginBottom: Spacing.xl,
+    ...Shadows.sm,
+  },
+  inputLabel: {
+    fontSize: FontSize.sm,
+    fontWeight: "500",
+    color: Colors.textSecondary,
+    marginBottom: Spacing.sm,
+  },
+  input: {
+    width: "100%",
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.surface,
+    fontSize: FontSize.base,
+    color: Colors.textPrimary,
+    marginBottom: Spacing.lg,
+  },
+  textarea: {
+    width: "100%",
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.surface,
+    fontSize: FontSize.base,
+    color: Colors.textPrimary,
+    minHeight: 80,
+    textAlignVertical: "top",
+    marginBottom: Spacing.lg,
+  },
+  chipRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: Spacing.sm,
+    marginBottom: Spacing.md,
+  },
+  chip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: "transparent",
+    minHeight: TouchMin,
+    justifyContent: "center",
+  },
+  chipActive: {
+    backgroundColor: Colors.textPrimary,
+    borderColor: Colors.textPrimary,
+  },
+  chipText: {
+    fontSize: FontSize.sm,
+    color: Colors.textSecondary,
+    fontWeight: "500",
+  },
+  chipActiveText: {
+    color: Colors.textInverse,
+    fontWeight: "600",
+  },
+  parentLabel: {
+    fontSize: FontSize.xs,
+    fontWeight: "700",
+    color: Colors.textTertiary,
+    marginBottom: Spacing.sm,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
 });

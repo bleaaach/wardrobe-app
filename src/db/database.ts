@@ -1,15 +1,25 @@
 import { Clothing, Category, Outfit, DailyLog, DEFAULT_CATEGORIES } from "../types";
 
-// Use direct localStorage for reliability (avoid AsyncStorage web compat issues)
+function safeLs(method: "getItem" | "setItem" | "removeItem", key: string, value?: string): string | null | void {
+  try {
+    if (typeof localStorage === "undefined") return method === "getItem" ? null : undefined;
+    if (method === "getItem") return localStorage.getItem(key);
+    if (method === "setItem" && value !== undefined) return localStorage.setItem(key, value);
+    if (method === "removeItem") return localStorage.removeItem(key);
+  } catch {
+    return method === "getItem" ? null : undefined;
+  }
+}
+
 const storage = {
   getItem(key: string): string | null {
-    try { return localStorage.getItem(key); } catch { return null; }
+    return safeLs("getItem", key) as string | null;
   },
   setItem(key: string, value: string): void {
-    try { localStorage.setItem(key, value); } catch {}
+    safeLs("setItem", key, value);
   },
   removeItem(key: string): void {
-    try { localStorage.removeItem(key); } catch {}
+    safeLs("removeItem", key);
   },
 };
 
@@ -71,6 +81,18 @@ export async function getArchivedClothing(): Promise<Clothing[]> {
 export async function getClothingByCategory(categoryId: string): Promise<Clothing[]> {
   const items = await getAllClothing();
   return items.filter((i) => i.categoryId === categoryId);
+}
+
+export async function searchClothing(keyword: string): Promise<Clothing[]> {
+  const items = await getAllClothing();
+  if (!keyword.trim()) return items;
+  const k = keyword.trim().toLowerCase();
+  return items.filter((i) =>
+    (i.name && i.name.toLowerCase().includes(k)) ||
+    (i.brand && i.brand.toLowerCase().includes(k)) ||
+    (i.color && i.color.toLowerCase().includes(k)) ||
+    (i.tags && i.tags.toLowerCase().includes(k))
+  );
 }
 
 export async function getClothingById(id: string): Promise<Clothing | null> {

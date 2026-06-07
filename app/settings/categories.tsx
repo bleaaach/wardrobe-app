@@ -1,9 +1,18 @@
-import { View, Text, FlatList, Pressable, TextInput, StyleSheet, Alert } from "react-native";
+import {
+  View,
+  Text,
+  Pressable,
+  TextInput,
+  StyleSheet,
+  Alert,
+  ScrollView,
+  Platform,
+} from "react-native";
 import { useRouter } from "expo-router";
 import { useState, useEffect, useMemo } from "react";
 import { useClothingStore } from "../../src/store/clothingStore";
 import { Ionicons } from "@expo/vector-icons";
-import { Colors, Spacing, Radius, FontSize, TouchMin, PressedOpacity } from "../../src/design/tokens";
+import { Colors, Spacing, Radius, FontSize, TouchMin } from "../../src/design/tokens";
 
 export default function CategoriesScreen() {
   const router = useRouter();
@@ -20,6 +29,7 @@ export default function CategoriesScreen() {
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState("");
   const [newParent, setNewParent] = useState<string | null>(null);
+  const [quickAddName, setQuickAddName] = useState<Record<string, string>>({});
 
   useEffect(() => { loadCategories(); }, []);
 
@@ -59,118 +69,213 @@ export default function CategoriesScreen() {
     ]);
   };
 
-  const renderCat = (cat: typeof categories[0], level: number) => {
-    const isEditing = editingId === cat.id;
-    const count = items.filter((i) => i.categoryId === cat.id).length;
-    const childrenCount = categories.filter((c) => c.parentId === cat.id).length;
-    return (
-      <View key={cat.id} style={[S.card, level === 1 && { marginLeft: Spacing.xl }]}>
-        {isEditing ? (
-          <View style={S.editRow}>
-            <TextInput style={[S.input, { flex: 1 }]} value={editName} onChangeText={setEditName} />
-            {!cat.parentId && (
-              <Pressable style={[S.badge, editParent === null && S.badgeActive]} onPress={() => setEditParent(null)}>
-                <Text style={S.badgeText}>一级</Text>
-              </Pressable>
-            )}
-            {cat.parentId && parents.map((p) => (
-              <Pressable key={p.id} style={[S.badge, editParent === p.id && S.badgeActive]} onPress={() => setEditParent(p.id)}>
-                <Text style={S.badgeText}>{p.name}</Text>
-              </Pressable>
-            ))}
-            <Pressable onPress={() => saveEdit(cat.id)} style={S.editAction}>
-              <Ionicons name="checkmark" size={22} color={Colors.accent} />
-            </Pressable>
-          </View>
-        ) : (
-          <View style={S.row}>
-            <View style={{ flex: 1 }}>
-              <Text style={[S.name, level === 0 && { fontWeight: "800", fontSize: FontSize.md }]}>{cat.name}</Text>
-              <Text style={S.count}>
-                {cat.parentId ? `${count} 件衣物` : `${childrenCount} 个子分类`}
-              </Text>
-            </View>
-            <Pressable onPress={() => startEdit(cat)} style={S.actionBtn}>
-              <Ionicons name="create-outline" size={18} color={Colors.textSecondary} />
-            </Pressable>
-            <Pressable onPress={() => handleDelete(cat.id, cat.name)} style={S.actionBtn}>
-              <Ionicons name="trash-outline" size={18} color={Colors.danger} />
-            </Pressable>
-          </View>
-        )}
-      </View>
-    );
+  const handleAdd = async () => {
+    if (!newName.trim()) return;
+    const sortOrder = newParent
+      ? (categories.filter((c) => c.parentId === newParent).length + 1)
+      : (parents.length + 1);
+    await addCat({ name: newName.trim(), icon: "", sortOrder, parentId: newParent });
+    setNewName("");
+    setNewParent(null);
+    setAdding(false);
   };
 
-  const allCats = parents.flatMap((p) => [p, ...(subsByParent.get(p.id) || [])]);
+  const handleQuickAdd = async (parentId: string) => {
+    const name = (quickAddName[parentId] || "").trim();
+    if (!name) return;
+    const sortOrder = categories.filter((c) => c.parentId === parentId).length + 1;
+    await addCat({ name, icon: "", sortOrder, parentId });
+    setQuickAddName((prev) => ({ ...prev, [parentId]: "" }));
+  };
+
+  const serifFont = Platform.OS === "ios" ? "Georgia" : "serif";
 
   return (
-    <View style={S.container}>
-      <View style={S.header}>
-        <Pressable onPress={() => router.back()} style={S.backBtn}>
-          <Ionicons name="chevron-back" size={24} color={Colors.textPrimary} />
+    <View style={styles.container}>
+      {/* Nav Header */}
+      <View style={styles.navHeader}>
+        <Pressable onPress={() => router.back()} style={styles.backBtn}>
+          <Ionicons name="chevron-back" size={20} color={Colors.textPrimary} />
         </Pressable>
-        <Text style={S.headerTitle}>分类管理</Text>
-        <View style={{ width: 40 }} />
+        <Text style={[styles.headerTitle, { fontFamily: serifFont }]}>Categories</Text>
+        <Pressable onPress={() => setAdding((v) => !v)} style={styles.headerAddBtn}>
+          <Ionicons name="add" size={22} color={Colors.textInverse} />
+        </Pressable>
       </View>
 
-      <FlatList
-        data={allCats}
-        contentContainerStyle={S.list}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => renderCat(item, item.parentId ? 1 : 0)}
-      />
-
-      {/* Add New */}
-      {adding ? (
-        <View style={S.addCard}>
-          <TextInput style={S.input} value={newName} onChangeText={setNewName} placeholder="新分类名称" placeholderTextColor={Colors.textTertiary} />
-          <Text style={{ fontSize: FontSize.xs, color: Colors.textTertiary, marginTop: Spacing.sm, marginBottom: Spacing.sm }}>选择所属一级分类（留空则为一级分类）</Text>
-          <View style={S.chips}>
-            <Pressable style={[S.badge, newParent === null && S.badgeActive]} onPress={() => setNewParent(null)}>
-              <Text style={S.badgeText}>一级分类</Text>
-            </Pressable>
-            {parents.map((p) => (
-              <Pressable key={p.id} style={[S.badge, newParent === p.id && S.badgeActive]} onPress={() => setNewParent(p.id)}>
-                <Text style={S.badgeText}>{p.name}</Text>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Add new category card */}
+        {adding && (
+          <View style={styles.catGroup}>
+            <View style={styles.catHeader}>
+              <Text style={styles.catHeaderName}>NEW CATEGORY</Text>
+            </View>
+            <View style={styles.addRow}>
+              <TextInput
+                style={styles.addInput}
+                value={newName}
+                onChangeText={setNewName}
+                placeholder="Category name..."
+                placeholderTextColor={Colors.textTertiary}
+              />
+              <Pressable style={[styles.addButton, !newName.trim() && { opacity: 0.45 }]} onPress={handleAdd}>
+                <Text style={styles.addButtonText}>Add</Text>
               </Pressable>
-            ))}
+            </View>
+            <View style={styles.chipsRow}>
+              <Pressable
+                style={[styles.chip, newParent === null && styles.chipActive]}
+                onPress={() => setNewParent(null)}
+              >
+                <Text style={[styles.chipText, newParent === null && styles.chipTextActive]}>一级分类</Text>
+              </Pressable>
+              {parents.map((p) => (
+                <Pressable
+                  key={p.id}
+                  style={[styles.chip, newParent === p.id && styles.chipActive]}
+                  onPress={() => setNewParent(p.id)}
+                >
+                  <Text style={[styles.chipText, newParent === p.id && styles.chipTextActive]}>{p.name}</Text>
+                </Pressable>
+              ))}
+            </View>
           </View>
-          <View style={{ flexDirection: "row", gap: Spacing.md, marginTop: Spacing.md }}>
-            <Pressable style={S.cancelBtn} onPress={() => { setAdding(false); setNewName(""); setNewParent(null); }}>
-              <Text style={S.cancelText}>取消</Text>
-            </Pressable>
-            <Pressable
-              style={[S.saveBtn, !newName && { opacity: 0.45 }]}
-              onPress={async () => {
-                if (!newName) return;
-                const sortOrder = newParent
-                  ? (categories.filter((c) => c.parentId === newParent).length + 1)
-                  : (parents.length + 1);
-                await addCat({ name: newName, icon: "", sortOrder, parentId: newParent });
-                setAdding(false);
-                setNewName("");
-                setNewParent(null);
-              }}
-            >
-              <Text style={S.saveText}>添加</Text>
-            </Pressable>
-          </View>
-        </View>
-      ) : (
-        <Pressable style={S.addBtn} onPress={() => setAdding(true)}>
-          <Ionicons name="add" size={22} color={Colors.accent} />
-          <Text style={S.addText}>添加新分类</Text>
-        </Pressable>
-      )}
+        )}
+
+        {/* Category groups */}
+        {parents.map((parent) => {
+          const subs = subsByParent.get(parent.id) || [];
+          const isEditingParent = editingId === parent.id;
+          return (
+            <View key={parent.id} style={styles.catGroup}>
+              {/* Group header */}
+              <View style={styles.catHeader}>
+                {isEditingParent ? (
+                  <View style={styles.editHeaderRow}>
+                    <TextInput
+                      style={styles.editHeaderInput}
+                      value={editName}
+                      onChangeText={setEditName}
+                    />
+                    <View style={styles.editHeaderActions}>
+                      <Pressable
+                        style={[styles.chip, editParent === null && styles.chipActive]}
+                        onPress={() => setEditParent(null)}
+                      >
+                        <Text style={[styles.chipText, editParent === null && styles.chipTextActive]}>一级</Text>
+                      </Pressable>
+                      {parents.filter((p) => p.id !== parent.id).map((p) => (
+                        <Pressable
+                          key={p.id}
+                          style={[styles.chip, editParent === p.id && styles.chipActive]}
+                          onPress={() => setEditParent(p.id)}
+                        >
+                          <Text style={[styles.chipText, editParent === p.id && styles.chipTextActive]}>{p.name}</Text>
+                        </Pressable>
+                      ))}
+                      <Pressable onPress={() => saveEdit(parent.id)} style={styles.editSaveBtn}>
+                        <Ionicons name="checkmark" size={20} color={Colors.accent} />
+                      </Pressable>
+                    </View>
+                  </View>
+                ) : (
+                  <>
+                    <Text style={styles.catHeaderName}>{parent.name}</Text>
+                    <View style={styles.catHeaderActions}>
+                      <Pressable onPress={() => startEdit(parent)} style={styles.catActionBtn}>
+                        <Text style={styles.catActionText}>Edit</Text>
+                      </Pressable>
+                      <Pressable onPress={() => handleDelete(parent.id, parent.name)} style={styles.catActionBtn}>
+                        <Text style={styles.catActionText}>Delete</Text>
+                      </Pressable>
+                    </View>
+                  </>
+                )}
+              </View>
+
+              {/* Sub list */}
+              <View style={styles.subList}>
+                {subs.map((sub) => {
+                  const isEditing = editingId === sub.id;
+                  const count = items.filter((i) => i.categoryId === sub.id).length;
+                  return (
+                    <View key={sub.id} style={styles.subItem}>
+                      {isEditing ? (
+                        <View style={styles.subEditRow}>
+                          <TextInput
+                            style={styles.subEditInput}
+                            value={editName}
+                            onChangeText={setEditName}
+                          />
+                          <View style={styles.subEditActions}>
+                            {parents.map((p) => (
+                              <Pressable
+                                key={p.id}
+                                style={[styles.chip, editParent === p.id && styles.chipActive]}
+                                onPress={() => setEditParent(p.id)}
+                              >
+                                <Text style={[styles.chipText, editParent === p.id && styles.chipTextActive]}>{p.name}</Text>
+                              </Pressable>
+                            ))}
+                            <Pressable onPress={() => saveEdit(sub.id)} style={styles.editSaveBtn}>
+                              <Ionicons name="checkmark" size={20} color={Colors.accent} />
+                            </Pressable>
+                          </View>
+                        </View>
+                      ) : (
+                        <>
+                          <View style={styles.subInfo}>
+                            <View style={styles.dragHandle}>
+                              <View style={styles.dragLine} />
+                              <View style={styles.dragLine} />
+                              <View style={styles.dragLine} />
+                            </View>
+                            <Text style={styles.subName}>{sub.name}</Text>
+                          </View>
+                          <View style={styles.subActions}>
+                            <Text style={styles.subCount}>{count} 件衣物</Text>
+                            <Pressable onPress={() => startEdit(sub)} style={styles.subActionBtn}>
+                              <Text style={styles.subActionText}>Edit</Text>
+                            </Pressable>
+                          </View>
+                        </>
+                      )}
+                    </View>
+                  );
+                })}
+              </View>
+
+              {/* Quick add row */}
+              <View style={styles.addRow}>
+                <TextInput
+                  style={styles.addInput}
+                  value={quickAddName[parent.id] || ""}
+                  onChangeText={(text) => setQuickAddName((prev) => ({ ...prev, [parent.id]: text }))}
+                  placeholder="Add sub-category..."
+                  placeholderTextColor={Colors.textTertiary}
+                />
+                <Pressable
+                  style={[styles.addButton, !(quickAddName[parent.id] || "").trim() && { opacity: 0.45 }]}
+                  onPress={() => handleQuickAdd(parent.id)}
+                >
+                  <Text style={styles.addButtonText}>Add</Text>
+                </Pressable>
+              </View>
+            </View>
+          );
+        })}
+      </ScrollView>
     </View>
   );
 }
 
-const S = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.bg },
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: Colors.bg,
+  },
 
-  header: {
+  navHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -178,37 +283,204 @@ const S = StyleSheet.create({
     paddingHorizontal: Spacing.xl,
     paddingBottom: Spacing.lg,
   },
-  backBtn: { width: 40, height: 40, justifyContent: "center" },
-  headerTitle: { fontSize: FontSize.xxl, fontWeight: "800", color: Colors.textPrimary, letterSpacing: -0.5 },
+  backBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontStyle: "italic",
+    fontWeight: "600",
+    color: Colors.textPrimary,
+  },
+  headerAddBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.textPrimary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 
-  list: { paddingHorizontal: Spacing.xl, paddingBottom: 120, gap: Spacing.md },
-  card: {
-    backgroundColor: Colors.surfaceElevated,
-    borderRadius: Radius.lg,
-    padding: Spacing.lg,
+  content: {
+    paddingHorizontal: Spacing.xl,
+    paddingBottom: 120,
+  },
+
+  catGroup: {
+    marginBottom: 20,
+  },
+  catHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 10,
+  },
+  catHeaderName: {
+    fontSize: 14,
+    fontWeight: "600",
+    textTransform: "uppercase",
+    letterSpacing: 1.5,
+    color: Colors.textPrimary,
+  },
+  catHeaderActions: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  catActionBtn: {
+    paddingHorizontal: 4,
+    minHeight: TouchMin,
+    justifyContent: "center",
+  },
+  catActionText: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+  },
+
+  subList: {
+    gap: 8,
+  },
+  subItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: Colors.surface,
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  subInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  dragHandle: {
+    width: 16,
+    gap: 3,
+  },
+  dragLine: {
+    height: 2,
+    backgroundColor: Colors.border,
+    borderRadius: 1,
+  },
+  subName: {
+    fontSize: 15,
+    fontWeight: "500",
+    color: Colors.textPrimary,
+  },
+  subActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  subCount: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+  },
+  subActionBtn: {
+    minHeight: TouchMin,
+    justifyContent: "center",
+  },
+  subActionText: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+  },
+
+  addRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 10,
+  },
+  addInput: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: Colors.border,
-  },
-  row: { flexDirection: "row", alignItems: "center", gap: Spacing.md },
-  name: { fontSize: FontSize.base, fontWeight: "600", color: Colors.textPrimary },
-  count: { fontSize: FontSize.sm, color: Colors.textTertiary, marginTop: 2 },
-  actionBtn: { padding: 8, minHeight: TouchMin, justifyContent: "center" },
-
-  editRow: { flexDirection: "row", alignItems: "center", gap: Spacing.sm, flexWrap: "wrap" },
-  input: {
     backgroundColor: Colors.surface,
+    fontSize: 14,
+    color: Colors.textPrimary,
+  },
+  addButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: Colors.textPrimary,
+    justifyContent: "center",
+  },
+  addButtonText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: Colors.textInverse,
+  },
+
+  subEditRow: {
+    flex: 1,
+    gap: Spacing.sm,
+  },
+  subEditInput: {
+    backgroundColor: Colors.surfaceHighlight,
     borderRadius: Radius.md,
     padding: 10,
     fontSize: FontSize.base,
     color: Colors.textPrimary,
     borderWidth: 1,
     borderColor: Colors.border,
-    minWidth: 120,
   },
-  editAction: { padding: 8 },
+  subEditActions: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
 
-  chips: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.sm },
-  badge: {
+  editHeaderRow: {
+    flex: 1,
+    gap: Spacing.sm,
+  },
+  editHeaderInput: {
+    backgroundColor: Colors.surfaceHighlight,
+    borderRadius: Radius.md,
+    padding: 10,
+    fontSize: FontSize.base,
+    color: Colors.textPrimary,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  editHeaderActions: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
+  editSaveBtn: {
+    padding: 8,
+    minHeight: TouchMin,
+    justifyContent: "center",
+  },
+
+  chipsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: Spacing.sm,
+    marginTop: Spacing.sm,
+  },
+  chip: {
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: Radius.full,
@@ -216,48 +488,15 @@ const S = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
   },
-  badgeActive: { backgroundColor: Colors.accent, borderColor: Colors.accent },
-  badgeText: { fontSize: FontSize.xs, color: Colors.textSecondary },
-
-  addBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    margin: Spacing.xl,
-    padding: Spacing.lg,
-    borderRadius: Radius.lg,
-    backgroundColor: Colors.surfaceElevated,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderStyle: "dashed",
-  },
-  addText: { fontSize: FontSize.base, color: Colors.accent, fontWeight: "600" },
-
-  addCard: {
-    margin: Spacing.xl,
-    padding: Spacing.lg,
-    backgroundColor: Colors.surfaceElevated,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  cancelBtn: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: Radius.md,
-    backgroundColor: Colors.surface,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  cancelText: { color: Colors.textSecondary, fontWeight: "600" },
-  saveBtn: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: Radius.md,
+  chipActive: {
     backgroundColor: Colors.accent,
-    alignItems: "center",
+    borderColor: Colors.accent,
   },
-  saveText: { color: Colors.textInverse, fontWeight: "600" },
+  chipText: {
+    fontSize: FontSize.xs,
+    color: Colors.textSecondary,
+  },
+  chipTextActive: {
+    color: Colors.textInverse,
+  },
 });

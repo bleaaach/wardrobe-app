@@ -1,17 +1,40 @@
-import { View, Text, FlatList, Pressable, StyleSheet } from "react-native";
+import { View, Text, FlatList, Pressable, StyleSheet, Platform } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { AsyncImage } from "../../src/components/AsyncImage";
 import { EmptyState } from "../../src/components/ui/EmptyState";
-import { OutfitPreview } from "../../src/components/OutfitPreview";
+import { PageTransition } from "../../src/components/PageTransition";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { Ionicons } from "@expo/vector-icons";
 import { getOutfits, getAllClothing } from "../../src/db/database";
 import { Outfit, Clothing } from "../../src/types";
-import { Colors, Spacing, Radius, FontSize, TouchMin, PressedOpacity, Shadows } from "../../src/design/tokens";
+import { Colors, Spacing, Radius, FontSize, Shadows } from "../../src/design/tokens";
+
+function CollagePreview({ items }: { items: Clothing[] }) {
+  const previews = items.slice(0, 4);
+  const bgColors = ["#F5F2EE", "#EDE9E4", "#F0EEEC", "#E7E5E4"];
+  return (
+    <View style={S.collage}>
+      {Array.from({ length: 4 }).map((_, i) => {
+        const item = previews[i];
+        return (
+          <View key={i} style={[S.collagePart, { backgroundColor: item ? Colors.bg : bgColors[i] }]}>
+            {item?.imageUri ? (
+              <AsyncImage uri={item.imageUri} style={{ width: "100%", height: "100%" }} />
+            ) : (
+              <Text style={S.collagePlaceholder}>?</Text>
+            )}
+          </View>
+        );
+      })}
+    </View>
+  );
+}
 
 export default function OutfitsScreen() {
   const router = useRouter();
   const [outfits, setOutfits] = useState<Outfit[]>([]);
   const [clothingMap, setClothingMap] = useState<Map<string, Clothing>>(new Map());
+  const isSerif = Platform.OS === "ios" ? "Georgia" : "serif";
 
   useEffect(() => {
     (async () => {
@@ -29,86 +52,80 @@ export default function OutfitsScreen() {
   };
 
   return (
+    <PageTransition>
     <View style={S.container}>
-      {/* Magazine Header */}
       <View style={S.header}>
-        <Text style={S.headerTitle}>My Looks</Text>
-        <Text style={S.headerSub}>{outfits.length} 套搭配</Text>
+        <Text style={[S.headerTitle, { fontFamily: isSerif }]}>Outfits</Text>
+        <Pressable style={S.addBtn} onPress={() => router.push("/outfits/create")}>
+          <Text style={S.addBtnText}>+</Text>
+        </Pressable>
       </View>
 
       <FlatList
         data={outfits}
-        style={{ flex: 1 }}
+        numColumns={2}
         contentContainerStyle={S.list}
         renderItem={({ item }) => {
           const items = getOutfitItems(item);
           return (
-            <Pressable
-              style={({ pressed }) => [S.card, pressed && S.cardPressed]}
-              onPress={() => router.push(`/outfits/${item.id}`)}
-            >
-              <OutfitPreview items={items} size={140} />
-              <View style={S.cardInfo}>
-                <Text style={S.name} numberOfLines={1}>{item.name || "未命名搭配"}</Text>
-                <Text style={S.meta}>{items.length} 件衣物 · {new Date(item.createdAt).toLocaleDateString("zh-CN", { month: "short", day: "numeric" })}</Text>
-              </View>
-              <View style={S.arrow}>
-                <Ionicons name="chevron-forward" size={18} color={Colors.textTertiary} />
-              </View>
+            <Pressable style={S.card} onPress={() => router.push(`/outfits/${item.id}`)}>
+              <CollagePreview items={items} />
+              <Text style={S.name} numberOfLines={1}>{item.name || "未命名搭配"}</Text>
+              <Text style={S.meta}>{items.length} 件衣物</Text>
             </Pressable>
           );
         }}
         keyExtractor={(item) => item.id}
         ListEmptyComponent={
           <EmptyState
-            icon="👔"
+            icon="layers-outline"
             title="还没有搭配"
             action={{ label: "创建搭配", onPress: () => router.push("/outfits/create") }}
           />
         }
       />
-
-      <Pressable style={S.fab} onPress={() => router.push("/outfits/create")}>
-        <Ionicons name="add" size={26} color={Colors.textInverse} />
-      </Pressable>
     </View>
+    </PageTransition>
   );
 }
 
 const S = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bg },
-
-  header: { paddingTop: 60, paddingHorizontal: Spacing.xl, paddingBottom: Spacing.lg },
-  headerTitle: { fontSize: 42, fontWeight: "800", color: Colors.textPrimary, letterSpacing: -1.5, lineHeight: 48 },
-  headerSub: { fontSize: FontSize.base, color: Colors.textTertiary, marginTop: Spacing.xs },
-
-  list: { paddingHorizontal: Spacing.xl, paddingBottom: 120, gap: Spacing.lg },
-  card: {
+  header: {
     flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: Colors.surfaceElevated,
-    borderRadius: Radius.xl,
-    padding: Spacing.lg,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    paddingTop: 56,
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  headerTitle: { fontSize: 42, fontStyle: "italic", fontWeight: "600", color: Colors.textPrimary, lineHeight: 48 },
+  addBtn: { width: 48, height: 48, backgroundColor: Colors.textPrimary, borderRadius: 24, justifyContent: "center", alignItems: "center", marginTop: 4 },
+  addBtnText: { color: "#fff", fontSize: 28, fontWeight: "300" },
+  list: { paddingHorizontal: 14, paddingBottom: 120, gap: 4 },
+  card: {
+    flex: 1,
+    margin: 6,
+    backgroundColor: Colors.surface,
+    borderRadius: 16,
+    padding: 12,
     ...Shadows.sm,
   },
-  cardPressed: { opacity: PressedOpacity },
-  cardInfo: { flex: 1, marginLeft: Spacing.lg },
-  name: { fontSize: FontSize.lg, fontWeight: "700", color: Colors.textPrimary, marginBottom: 4 },
-  meta: { fontSize: FontSize.sm, color: Colors.textTertiary },
-  arrow: { marginLeft: Spacing.sm },
-
-  fab: {
-    position: "absolute",
-    bottom: 28,
-    right: 24,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: Colors.accent,
+  collage: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+    marginBottom: 10,
+  },
+  collagePart: {
+    width: "47%",
+    aspectRatio: 0.9,
+    borderRadius: 10,
+    overflow: "hidden",
     justifyContent: "center",
     alignItems: "center",
-    ...Shadows.md,
   },
+  collagePlaceholder: { fontSize: 14, fontWeight: "700", color: Colors.textTertiary },
+  name: { fontSize: 15, fontWeight: "600", color: Colors.textPrimary, marginBottom: 2 },
+  meta: { fontSize: 12, color: Colors.textSecondary },
 });

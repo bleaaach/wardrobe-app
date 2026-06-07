@@ -5,10 +5,13 @@ import jwt from "jsonwebtoken";
 import { v4 as uuid } from "uuid";
 
 const router = Router();
-const JWT_SECRET = process.env.JWT_SECRET || "wardrobe-secret-key-change-me";
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error("JWT_SECRET environment variable is required");
+}
 
 // Register
-router.post("/register", (req, res) => {
+router.post("/register", async (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) return res.status(400).json({ error: "用户名和密码必填" });
 
@@ -17,7 +20,7 @@ router.post("/register", (req, res) => {
   if (existing) return res.status(409).json({ error: "用户名已存在" });
 
   const id = uuid();
-  const hash = bcrypt.hashSync(password, 10);
+  const hash = await bcrypt.hash(password, 10);
   db.prepare("INSERT INTO users (id, username, password, created_at) VALUES (?, ?, ?, ?)").run(id, username, hash, new Date().toISOString());
 
   const token = jwt.sign({ userId: id, username }, JWT_SECRET, { expiresIn: "365d" });
@@ -25,7 +28,7 @@ router.post("/register", (req, res) => {
 });
 
 // Login
-router.post("/login", (req, res) => {
+router.post("/login", async (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) return res.status(400).json({ error: "用户名和密码必填" });
 
@@ -33,7 +36,8 @@ router.post("/login", (req, res) => {
   const user = db.prepare("SELECT * FROM users WHERE username = ?").get(username);
   if (!user) return res.status(401).json({ error: "用户名或密码错误" });
 
-  if (!bcrypt.compareSync(password, user.password)) return res.status(401).json({ error: "用户名或密码错误" });
+  const valid = await bcrypt.compare(password, user.password);
+  if (!valid) return res.status(401).json({ error: "用户名或密码错误" });
 
   const token = jwt.sign({ userId: user.id, username }, JWT_SECRET, { expiresIn: "365d" });
   res.json({ token, userId: user.id, username });

@@ -12,16 +12,18 @@ import { Ionicons } from "@expo/vector-icons";
 import { getAllClothing, addDailyLog, getDailyLogByDate } from "../../src/db/database";
 import { Clothing } from "../../src/types";
 import { AsyncImage } from "../../src/components/AsyncImage";
+import { useThemeColors } from "../../src/hooks/useThemeColors";
 import {
-  Colors,
   Spacing,
   Radius,
   FontSize,
   PressedOpacity,
+  ThemeColors,
 } from "../../src/design/tokens";
 
 export default function SelectClothingScreen() {
   const router = useRouter();
+  const colors = useThemeColors();
   const { date } = useLocalSearchParams<{ date: string }>();
 
   const [items, setItems] = useState<Clothing[]>([]);
@@ -40,7 +42,9 @@ export default function SelectClothingScreen() {
           try {
             const ids: string[] = JSON.parse(existing.clothingIds);
             setSelected(new Set(ids));
-          } catch { /* ignore */ }
+          } catch (e) {
+            console.error("Parse clothingIds error:", e);
+          }
         }
       }
     })();
@@ -88,44 +92,44 @@ export default function SelectClothingScreen() {
     : "";
 
   return (
-    <View style={S.container}>
+    <View style={S(colors).container}>
       {/* Header */}
-      <View style={S.header}>
-        <Pressable style={S.backBtn} onPress={() => router.back()}>
-          <Ionicons name="close" size={24} color={Colors.textPrimary} />
+      <View style={S(colors).header}>
+        <Pressable style={S(colors).backBtn} onPress={() => router.back()}>
+          <Ionicons name="close" size={24} color={colors.textPrimary} />
         </Pressable>
-        <View style={S.headerCenter}>
-          <Text style={S.headerTitle}>{displayDate}</Text>
-          <Text style={S.headerSub}>从物品库选择当日穿搭</Text>
+        <View style={S(colors).headerCenter}>
+          <Text style={S(colors).headerTitle}>{displayDate}</Text>
+          <Text style={S(colors).headerSub}>从物品库选择当日穿搭</Text>
         </View>
         <View style={{ width: 40 }} />
       </View>
 
       {/* Selected count */}
       {selected.size > 0 && (
-        <View style={S.countBar}>
-          <Text style={S.countText}>已选择 {selected.size} 件</Text>
+        <View style={S(colors).countBar}>
+          <Text style={S(colors).countText}>已选择 {selected.size} 件</Text>
           <Pressable onPress={() => setSelected(new Set())}>
-            <Text style={S.clearText}>清空</Text>
+            <Text style={S(colors).clearText}>清空</Text>
           </Pressable>
         </View>
       )}
 
       {/* Grid */}
       <ScrollView
-        style={S.scroll}
-        contentContainerStyle={S.grid}
+        style={S(colors).scroll}
+        contentContainerStyle={S(colors).grid}
         showsVerticalScrollIndicator={false}
       >
         {items.length === 0 ? (
-          <View style={S.empty}>
+          <View style={S(colors).empty}>
             <Ionicons
               name="shirt-outline"
               size={40}
-              color={Colors.textTertiary}
+              color={colors.textTertiary}
             />
-            <Text style={S.emptyText}>衣橱空空</Text>
-            <Text style={S.emptySub}>先添加一些衣物吧</Text>
+            <Text style={S(colors).emptyText}>衣橱空空</Text>
+            <Text style={S(colors).emptySub}>先添加一些衣物吧</Text>
           </View>
         ) : (
           items.map((item) => {
@@ -134,29 +138,29 @@ export default function SelectClothingScreen() {
               <Pressable
                 key={item.id}
                 style={({ pressed }) => [
-                  S.card,
-                  isSel && S.cardActive,
-                  pressed && S.cardPressed,
+                  S(colors).card,
+                  isSel && S(colors).cardActive,
+                  pressed && S(colors).cardPressed,
                 ]}
                 onPress={() => toggle(item.id)}
               >
-                <AsyncImage uri={item.imageUri} style={S.image} />
+                <AsyncImage uri={item.imageUri} style={S(colors).image} />
                 {isSel && (
-                  <View style={S.checkOverlay}>
-                    <View style={S.checkCircle}>
+                  <View style={S(colors).checkOverlay}>
+                    <View style={S(colors).checkCircle}>
                       <Ionicons
                         name="checkmark"
                         size={18}
-                        color={Colors.textInverse}
+                        color={colors.textInverse}
                       />
                     </View>
                   </View>
                 )}
-                <View style={S.info}>
-                  <Text style={S.name} numberOfLines={1}>
+                <View style={S(colors).info}>
+                  <Text style={S(colors).name} numberOfLines={1}>
                     {item.name || "未命名"}
                   </Text>
-                  <Text style={S.meta} numberOfLines={1}>
+                  <Text style={S(colors).meta} numberOfLines={1}>
                     {item.brand || item.color || ""}
                   </Text>
                 </View>
@@ -168,17 +172,17 @@ export default function SelectClothingScreen() {
       </ScrollView>
 
       {/* Footer */}
-      <View style={S.footer}>
+      <View style={S(colors).footer}>
         <Pressable
           style={({ pressed }) => [
-            S.saveBtn,
-            (selected.size === 0 || loading) && S.saveBtnDisabled,
-            pressed && selected.size > 0 && !loading && S.pressed,
+            S(colors).saveBtn,
+            (selected.size === 0 || loading) && S(colors).saveBtnDisabled,
+            pressed && selected.size > 0 && !loading && S(colors).pressed,
           ]}
           onPress={handleSave}
           disabled={selected.size === 0 || loading}
         >
-          <Text style={S.saveBtnText}>
+          <Text style={S(colors).saveBtnText}>
             {loading ? "保存中..." : `保存记录 (${selected.size})`}
           </Text>
         </Pressable>
@@ -187,8 +191,8 @@ export default function SelectClothingScreen() {
   );
 }
 
-const S = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.bg },
+const S = (colors: ThemeColors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.bg },
 
   header: {
     paddingTop: 48,
@@ -202,7 +206,7 @@ const S = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: Colors.surface,
+    backgroundColor: colors.surface,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -210,11 +214,11 @@ const S = StyleSheet.create({
   headerTitle: {
     fontSize: FontSize.lg,
     fontWeight: "700",
-    color: Colors.textPrimary,
+    color: colors.textPrimary,
   },
   headerSub: {
     fontSize: FontSize.sm,
-    color: Colors.textTertiary,
+    color: colors.textTertiary,
     marginTop: 2,
   },
 
@@ -224,19 +228,19 @@ const S = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: Spacing.xl,
     paddingVertical: Spacing.sm,
-    backgroundColor: Colors.accentLight,
+    backgroundColor: colors.accentLight,
     marginHorizontal: Spacing.xl,
     marginBottom: Spacing.md,
     borderRadius: Radius.md,
   },
   countText: {
     fontSize: FontSize.sm,
-    color: Colors.accent,
+    color: colors.accent,
     fontWeight: "600",
   },
   clearText: {
     fontSize: FontSize.sm,
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
     fontWeight: "500",
   },
 
@@ -251,14 +255,14 @@ const S = StyleSheet.create({
 
   card: {
     width: "47%",
-    backgroundColor: Colors.surfaceElevated,
+    backgroundColor: colors.surfaceElevated,
     borderRadius: Radius.lg,
     borderWidth: 2,
-    borderColor: Colors.border,
+    borderColor: colors.border,
     overflow: "hidden",
   },
   cardActive: {
-    borderColor: Colors.accent,
+    borderColor: colors.accent,
   },
   cardPressed: {
     opacity: PressedOpacity,
@@ -281,7 +285,7 @@ const S = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: Colors.accent,
+    backgroundColor: colors.accent,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -291,12 +295,12 @@ const S = StyleSheet.create({
   name: {
     fontSize: FontSize.base,
     fontWeight: "600",
-    color: Colors.textPrimary,
+    color: colors.textPrimary,
     marginBottom: 2,
   },
   meta: {
     fontSize: FontSize.xs,
-    color: Colors.textTertiary,
+    color: colors.textTertiary,
   },
 
   empty: {
@@ -307,12 +311,12 @@ const S = StyleSheet.create({
   emptyText: {
     fontSize: FontSize.lg,
     fontWeight: "600",
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
     marginTop: Spacing.md,
   },
   emptySub: {
     fontSize: FontSize.sm,
-    color: Colors.textTertiary,
+    color: colors.textTertiary,
     marginTop: 4,
   },
 
@@ -320,21 +324,21 @@ const S = StyleSheet.create({
     paddingHorizontal: Spacing.xl,
     paddingBottom: 32,
     paddingTop: Spacing.lg,
-    backgroundColor: Colors.bg,
+    backgroundColor: colors.bg,
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
+    borderTopColor: colors.border,
   },
   saveBtn: {
-    backgroundColor: Colors.accent,
+    backgroundColor: colors.accent,
     borderRadius: Radius.lg,
     paddingVertical: 16,
     alignItems: "center",
   },
   saveBtnDisabled: {
-    backgroundColor: Colors.surfaceHighlight,
+    backgroundColor: colors.surfaceHighlight,
   },
   saveBtnText: {
-    color: Colors.textInverse,
+    color: colors.textInverse,
     fontWeight: "700",
     fontSize: FontSize.md,
   },

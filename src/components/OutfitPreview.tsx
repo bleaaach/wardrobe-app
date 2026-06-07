@@ -54,7 +54,7 @@ export function OutfitPreview({ items, size = 120 }: { items: Clothing[]; size?:
   return (
     <View style={[S.wrap, { width: size, height: size, flexWrap: "wrap", gap: 3 }]}>
       {validItems.map((item, i) => (
-        <View key={item.id + i} style={{ width: size / 2 - 2, height: size / 2 - 2 }}>
+        <View key={item.id} style={{ width: size / 2 - 2, height: size / 2 - 2 }}>
           <AsyncImage uri={item.imageUri} style={{ width: "100%", height: "100%" }} />
         </View>
       ))}

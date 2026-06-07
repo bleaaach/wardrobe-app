@@ -13,6 +13,7 @@ import {
   getArchivedClothing,
   restoreClothing,
 } from "../db/database";
+import { triggerAutoSync } from "../services/webdavSync";
 
 interface ClothingState {
   items: Clothing[];
@@ -51,6 +52,7 @@ export const useClothingStore = create<ClothingState>((set, get) => ({
   addItem: async (data) => {
     const item = await addClothing(data);
     set((s) => ({ items: [item, ...s.items] }));
+    triggerAutoSync();
     return item;
   },
 
@@ -59,17 +61,20 @@ export const useClothingStore = create<ClothingState>((set, get) => ({
     set((s) => ({
       items: s.items.map((i) => (i.id === id ? { ...i, ...data } : i)),
     }));
+    triggerAutoSync();
   },
 
   deleteItem: async (id) => {
     await deleteClothing(id);
     set((s) => ({ items: s.items.filter((i) => i.id !== id) }));
+    triggerAutoSync();
   },
 
   restoreItem: async (id) => {
     await restoreClothing(id);
     const items = await getAllClothing();
     set({ items });
+    triggerAutoSync();
   },
 
   getByCategory: (catId) => get().items.filter((i) => i.categoryId === catId),
@@ -78,18 +83,21 @@ export const useClothingStore = create<ClothingState>((set, get) => ({
     await addCategory(data);
     const categories = await getCategories();
     set({ categories });
+    triggerAutoSync();
   },
 
   updateCat: async (id, data) => {
     await updateCategory(id, data);
     const categories = await getCategories();
     set({ categories });
+    triggerAutoSync();
   },
 
   deleteCat: async (id) => {
     await deleteCategory(id);
-    const categories = await getCategories();
-    set({ categories });
+    const [categories, items] = await Promise.all([getCategories(), getAllClothing()]);
+    set({ categories, items });
+    triggerAutoSync();
   },
 
   getRelatedOutfits: (clothingId) => getOutfitsByClothingId(clothingId),

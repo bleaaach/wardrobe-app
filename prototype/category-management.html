@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Categories</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        :root {
+            --bg: #FAF8F5; --card: #FFFFFF; --text-primary: #1C1917;
+            --text-secondary: #78716C; --accent: #E07A5F; --divider: #E7E5E4;
+            --nav-inactive: #A8A29E;
+        }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg); color: var(--text-primary);
+            overflow: hidden; height: 100vh; display: flex;
+            justify-content: center; align-items: center; touch-action: manipulation;
+        }
+        .phone-frame {
+            width: 390px; height: 844px; background: var(--bg);
+            border-radius: 40px; box-shadow: 0 25px 80px rgba(0,0,0,0.15), 0 0 0 12px #1C1917;
+            position: relative; overflow: hidden; display: flex; flex-direction: column;
+        }
+        .notch { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); width: 126px; height: 34px; background: #1C1917; border-radius: 20px; z-index: 100; }
+        .status-bar { height: 44px; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; font-size: 15px; font-weight: 600; letter-spacing: -0.3px; }
+        .status-bar .icons { display: flex; gap: 6px; align-items: center; }
+        .status-bar .icons svg { width: 18px; height: 18px; stroke: var(--text-primary); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+        .nav-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 8px 20px 16px;
+        }
+        .nav-header .back {
+            width: 36px; height: 36px; border-radius: 50%; border: none;
+            background: var(--card); display: flex; align-items: center; justify-content: center;
+            cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        .nav-header .back svg { width: 18px; height: 18px; stroke: var(--text-primary); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        .nav-header h1 {
+            font-family: 'Playfair Display', serif; font-size: 24px; font-style: italic; font-weight: 600;
+        }
+        .nav-header .add {
+            width: 36px; height: 36px; border-radius: 50%; border: none;
+            background: var(--text-primary); color: #fff; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; font-size: 20px; font-weight: 300;
+        }
+
+        .content { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 0 20px; scrollbar-width: none; }
+        .content::-webkit-scrollbar { display: none; }
+
+        .cat-group { margin-bottom: 20px; }
+        .cat-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .cat-header .cat-name {
+            font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px;
+        }
+        .cat-header .cat-actions { display: flex; gap: 8px; }
+        .cat-header .cat-actions button {
+            background: none; border: none; font-size: 12px; color: var(--text-secondary);
+            cursor: pointer; font-family: 'Inter', sans-serif;
+        }
+
+        .sub-list { display: flex; flex-direction: column; gap: 8px; }
+        .sub-item {
+            display: flex; align-items: center; justify-content: space-between;
+            background: var(--card); border-radius: 14px; padding: 14px 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        .sub-item .sub-info { display: flex; align-items: center; gap: 10px; }
+        .sub-item .drag-handle {
+            width: 16px; display: flex; flex-direction: column; gap: 3px;
+        }
+        .sub-item .drag-handle span {
+            display: block; height: 2px; background: var(--divider); border-radius: 1px;
+        }
+        .sub-item .sub-name { font-size: 15px; font-weight: 500; }
+        .sub-item .sub-count { font-size: 12px; color: var(--text-secondary); }
+        .sub-item .sub-actions { display: flex; gap: 12px; }
+        .sub-item .sub-actions button {
+            background: none; border: none; font-size: 13px; color: var(--text-secondary);
+            cursor: pointer; font-family: 'Inter', sans-serif;
+        }
+
+        .add-row {
+            display: flex; gap: 8px; margin-top: 10px;
+        }
+        .add-row input {
+            flex: 1; padding: 10px 14px; border-radius: 12px;
+            border: 1px solid var(--divider); background: var(--card);
+            font-size: 14px; font-family: 'Inter', sans-serif; outline: none;
+        }
+        .add-row button {
+            padding: 10px 16px; border-radius: 12px; border: none;
+            background: var(--text-primary); color: #fff; font-size: 13px; font-weight: 600;
+            cursor: pointer; font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <div class="phone-frame">
+        <div class="notch"></div>
+        <div class="status-bar">
+            <span class="time">09:41</span>
+            <div class="icons">
+                <svg viewBox="0 0 24 24"><path d="M6 10l0 4"/><path d="M10 8l0 8"/><path d="M14 6l0 12"/><path d="M18 9l0 6"/></svg>
+                <svg viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/></svg>
+                <svg viewBox="0 0 24 24"><rect x="2" y="7" width="16" height="10" rx="2"/><path d="M22 11v2"/></svg>
+            </div>
+        </div>
+
+        <div class="nav-header">
+            <button class="back" onclick="history.back()" aria-label="Back">
+                <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+            </button>
+            <h1>Categories</h1>
+            <button class="add">+</button>
+        </div>
+
+        <div class="content">
+            <div class="cat-group">
+                <div class="cat-header">
+                    <div class="cat-name">Tops</div>
+                    <div class="cat-actions">
+                        <button>Edit</button>
+                        <button>Delete</button>
+                    </div>
+                </div>
+                <div class="sub-list">
+                    <div class="sub-item">
+                        <div class="sub-info">
+                            <div class="drag-handle"><span></span><span></span><span></span></div>
+                            <div class="sub-name">Shirt</div>
+                        </div>
+                        <div class="sub-actions">
+                            <span class="sub-count">6 items</span>
+                            <button>Edit</button>
+                        </div>
+                    </div>
+                    <div class="sub-item">
+                        <div class="sub-info">
+                            <div class="drag-handle"><span></span><span></span><span></span></div>
+                            <div class="sub-name">T-shirt</div>
+                        </div>
+                        <div class="sub-actions">
+                            <span class="sub-count">8 items</span>
+                            <button>Edit</button>
+                        </div>
+                    </div>
+                    <div class="sub-item">
+                        <div class="sub-info">
+                            <div class="drag-handle"><span></span><span></span><span></span></div>
+                            <div class="sub-name">Sweater</div>
+                        </div>
+                        <div class="sub-actions">
+                            <span class="sub-count">4 items</span>
+                            <button>Edit</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="add-row">
+                    <input type="text" placeholder="Add sub-category...">
+                    <button>Add</button>
+                </div>
+            </div>
+
+            <div class="cat-group">
+                <div class="cat-header">
+                    <div class="cat-name">Bottoms</div>
+                    <div class="cat-actions">
+                        <button>Edit</button>
+                        <button>Delete</button>
+                    </div>
+                </div>
+                <div class="sub-list">
+                    <div class="sub-item">
+                        <div class="sub-info">
+                            <div class="drag-handle"><span></span><span></span><span></span></div>
+                            <div class="sub-name">Pants</div>
+                        </div>
+                        <div class="sub-actions">
+                            <span class="sub-count">7 items</span>
+                            <button>Edit</button>
+                        </div>
+                    </div>
+                    <div class="sub-item">
+                        <div class="sub-info">
+                            <div class="drag-handle"><span></span><span></span><span></span></div>
+                            <div class="sub-name">Shorts</div>
+                        </div>
+                        <div class="sub-actions">
+                            <span class="sub-count">3 items</span>
+                            <button>Edit</button>
+                        </div>
+                    </div>
+                    <div class="sub-item">
+                        <div class="sub-info">
+                            <div class="drag-handle"><span></span><span></span><span></span></div>
+                            <div class="sub-name">Skirt</div>
+                        </div>
+                        <div class="sub-actions">
+                            <span class="sub-count">2 items</span>
+                            <button>Edit</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="add-row">
+                    <input type="text" placeholder="Add sub-category...">
+                    <button>Add</button>
+                </div>
+            </div>
+
+            <div class="cat-group">
+                <div class="cat-header">
+                    <div class="cat-name">Shoes</div>
+                    <div class="cat-actions">
+                        <button>Edit</button>
+                        <button>Delete</button>
+                    </div>
+                </div>
+                <div class="sub-list">
+                    <div class="sub-item">
+                        <div class="sub-info">
+                            <div class="drag-handle"><span></span><span></span><span></span></div>
+                            <div class="sub-name">Sneakers</div>
+                        </div>
+                        <div class="sub-actions">
+                            <span class="sub-count">5 items</span>
+                            <button>Edit</button>
+                        </div>
+                    </div>
+                    <div class="sub-item">
+                        <div class="sub-info">
+                            <div class="drag-handle"><span></span><span></span><span></span></div>
+                            <div class="sub-name">Boots</div>
+                        </div>
+                        <div class="sub-actions">
+                            <span class="sub-count">3 items</span>
+                            <button>Edit</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="add-row">
+                    <input type="text" placeholder="Add sub-category...">
+                    <button>Add</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

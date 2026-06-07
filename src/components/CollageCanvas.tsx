@@ -1,10 +1,13 @@
-import { View, StyleSheet, Dimensions, Pressable } from "react-native";
+import { View, StyleSheet, Dimensions, Pressable, Image, Alert } from "react-native";
 import Animated, { useSharedValue, useAnimatedStyle, runOnJS } from "react-native-reanimated";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import { Ionicons } from "@expo/vector-icons";
 import { Clothing, OutfitLayoutItem } from "../types";
 import { AsyncImage } from "./AsyncImage";
 import { Colors, Radius } from "../design/tokens";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
+import { generateInitialLayout } from "./CollageCanvas.logic";
+import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
 
 const SCREEN = Dimensions.get("window");
 const CANVAS_W = SCREEN.width - 40; // 留边距
@@ -17,72 +20,26 @@ interface CollageCanvasProps {
   items: Clothing[];
   initialLayout?: OutfitLayoutItem[];
   onLayoutChange?: (layout: OutfitLayoutItem[]) => void;
+  onItemImageCropped?: (clothingId: string, newUri: string) => void;
   readOnly?: boolean;
 }
 
-export function CollageCanvas({ items, initialLayout, onLayoutChange, readOnly }: CollageCanvasProps) {
+export function CollageCanvas({ items, initialLayout, onLayoutChange, onItemImageCropped, readOnly }: CollageCanvasProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   // 初始化每个衣物的布局状态
-  const [layoutMap, setLayoutMap] = useState<Record<string, OutfitLayoutItem>>(() => {
-    const map: Record<string, OutfitLayoutItem> = {};
-    if (initialLayout) {
-      for (const l of initialLayout) {
-        map[l.clothingId] = l;
-      }
-    }
-    let idx = 0;
-    for (const item of items) {
-      if (!map[item.id]) {
-        const angle = idx * 1.2;
-        const radius = Math.min(40 + idx * 12, 120);
-        map[item.id] = {
-          clothingId: item.id,
-          x: Math.cos(angle) * radius,
-          y: Math.sin(angle) * radius,
-          scale: 1,
-          zIndex: idx,
-        };
-      }
-      idx++;
-    }
-    return map;
-  });
+  const [layoutMap, setLayoutMap] = useState<Record<string, OutfitLayoutItem>>(() =>
+    generateInitialLayout(items, initialLayout)
+  );
 
   // 同步新加入或删除的衣物
+  const prevItemIdsRef = useRef<string>("");
   useEffect(() => {
-    const ids = new Set(items.map((i) => i.id));
-    setLayoutMap((prev) => {
-      const next: Record<string, OutfitLayoutItem> = {};
-      let maxZ = 0;
-      for (const l of Object.values(prev)) {
-        next[l.clothingId] = l;
-        maxZ = Math.max(maxZ, l.zIndex);
-      }
-      let idx = 0;
-      for (const item of items) {
-        if (!next[item.id]) {
-          const angle = idx * 1.2;
-          const radius = Math.min(40 + idx * 12, 120);
-          next[item.id] = {
-            clothingId: item.id,
-            x: Math.cos(angle) * radius,
-            y: Math.sin(angle) * radius,
-            scale: 1,
-            zIndex: maxZ + 1 + idx,
-          };
-        }
-        idx++;
-      }
-      // 清理已删除的
-      for (const key of Object.keys(next)) {
-        if (!ids.has(key)) {
-          delete next[key];
-        }
-      }
-      return next;
-    });
-  }, [items.map((i) => i.id).join(",")]);
+    const idsKey = items.map((i) => i.id).join(",");
+    if (prevItemIdsRef.current === idsKey) return;
+    prevItemIdsRef.current = idsKey;
+    setLayoutMap((prev) => generateInitialLayout(items, undefined, prev));
+  }, [items]);
 
   const notifyChange = useCallback(
     (map: Record<string, OutfitLayoutItem>) => {
@@ -134,6 +91,31 @@ export function CollageCanvas({ items, initialLayout, onLayoutChange, readOnly }
   );
 
   const layout = selectedId ? layoutMap[selectedId] : null;
+  const selectedItem = items.find((i) => i.id === selectedId);
+
+  const handleCrop = async (item: Clothing) => {
+    const uri = item.imageNoBgUri || item.imageUri;
+    try {
+      const { width, height } = await new Promise<{ width: number; height: number }>((resolve, reject) => {
+        Image.getSize(uri, (w, h) => resolve({ width: w, height: h }), reject);
+      });
+      const side = Math.min(width, height);
+      const originX = (width - side) / 2;
+      const originY = (height - side) / 2;
+
+      const manipulator = ImageManipulator.manipulate(uri);
+      manipulator.crop({ originX, originY, width: side, height: side });
+      const rendered = await manipulator.renderAsync();
+      const result = await rendered.saveAsync({ format: SaveFormat.JPEG, compress: 0.9 });
+      manipulator.release();
+      rendered.release();
+
+      onItemImageCropped?.(item.id, result.uri);
+    } catch (e) {
+      console.error("Crop error:", e);
+      Alert.alert("裁剪失败", String(e));
+    }
+  };
 
   return (
     <View>
@@ -154,7 +136,7 @@ export function CollageCanvas({ items, initialLayout, onLayoutChange, readOnly }
         ))}
       </View>
 
-      {!readOnly && layout && (
+      {!readOnly && layout && selectedItem && (
         <View style={S.toolbar}>
           <Pressable
             style={S.toolBtn}
@@ -172,6 +154,18 @@ export function CollageCanvas({ items, initialLayout, onLayoutChange, readOnly }
               <View style={S.plusLine} />
               <View style={[S.plusLine, S.plusLineV]} />
             </View>
+          </Pressable>
+          <Pressable
+            style={S.toolBtn}
+            onPress={() => updateItem(selectedId!, { rotation: ((layout.rotation ?? 0) + 15) % 360 })}
+          >
+            <Ionicons name="refresh" size={18} color={Colors.textPrimary} />
+          </Pressable>
+          <Pressable
+            style={S.toolBtn}
+            onPress={() => handleCrop(selectedItem)}
+          >
+            <Ionicons name="crop" size={18} color={Colors.textPrimary} />
           </Pressable>
           <Pressable
             style={[S.toolBtn, S.toolBtnDanger]}
@@ -214,6 +208,7 @@ function DraggableItem({
 
   const startX = useSharedValue(0);
   const startY = useSharedValue(0);
+  const startScale = useSharedValue(1);
 
   const panGesture = Gesture.Pan()
     .enabled(!readOnly)
@@ -230,18 +225,34 @@ function DraggableItem({
       runOnJS(onUpdate)({ x: offsetX.value, y: offsetY.value });
     });
 
+  const pinchGesture = Gesture.Pinch()
+    .enabled(!readOnly)
+    .onBegin(() => {
+      runOnJS(onSelect)();
+      startScale.value = layout?.scale ?? 1;
+    })
+    .onUpdate((e) => {
+      currentScale.value = Math.max(0.3, Math.min(3, startScale.value * e.scale));
+    })
+    .onEnd(() => {
+      runOnJS(onUpdate)({ scale: currentScale.value });
+    });
+
+  const composedGesture = Gesture.Simultaneous(panGesture, pinchGesture);
+
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [
       { translateX: offsetX.value },
       { translateY: offsetY.value },
       { scale: currentScale.value },
+      { rotateZ: `${layout?.rotation ?? 0}deg` },
     ],
   }));
 
   const imageUri = item.imageNoBgUri || item.imageUri;
 
   return (
-    <GestureDetector gesture={panGesture}>
+    <GestureDetector gesture={composedGesture}>
       <Animated.View
         style={[
           S.itemWrap,

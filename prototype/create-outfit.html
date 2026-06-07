@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Create Outfit</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        :root {
+            --bg: #FAF8F5; --card: #FFFFFF; --text-primary: #1C1917;
+            --text-secondary: #78716C; --accent: #E07A5F; --divider: #E7E5E4;
+            --nav-inactive: #A8A29E;
+        }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg); color: var(--text-primary);
+            overflow: hidden; height: 100vh; display: flex;
+            justify-content: center; align-items: center; touch-action: manipulation;
+        }
+        .phone-frame {
+            width: 390px; height: 844px; background: var(--bg);
+            border-radius: 40px; box-shadow: 0 25px 80px rgba(0,0,0,0.15), 0 0 0 12px #1C1917;
+            position: relative; overflow: hidden; display: flex; flex-direction: column;
+        }
+        .notch { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); width: 126px; height: 34px; background: #1C1917; border-radius: 20px; z-index: 100; }
+        .status-bar { height: 44px; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; font-size: 15px; font-weight: 600; letter-spacing: -0.3px; }
+        .status-bar .icons { display: flex; gap: 6px; align-items: center; }
+        .status-bar .icons svg { width: 18px; height: 18px; stroke: var(--text-primary); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+        .nav-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 8px 20px 16px;
+        }
+        .nav-header .back {
+            width: 36px; height: 36px; border-radius: 50%; border: none;
+            background: var(--card); display: flex; align-items: center; justify-content: center;
+            cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        .nav-header .back svg { width: 18px; height: 18px; stroke: var(--text-primary); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        .nav-header h1 {
+            font-family: 'Playfair Display', serif; font-size: 24px; font-style: italic; font-weight: 600;
+        }
+        .nav-header .save {
+            padding: 8px 18px; border-radius: 20px; border: none;
+            background: var(--text-primary); color: #fff; font-size: 13px; font-weight: 600;
+            cursor: pointer; font-family: 'Inter', sans-serif;
+        }
+
+        .content { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 0 20px; scrollbar-width: none; }
+        .content::-webkit-scrollbar { display: none; }
+
+        .outfit-name-input {
+            width: 100%; padding: 14px 16px; border-radius: 16px;
+            border: 1px solid var(--divider); background: var(--card);
+            font-size: 16px; font-family: 'Inter', sans-serif; color: var(--text-primary);
+            outline: none; margin-bottom: 20px;
+        }
+        .outfit-name-input:focus { border-color: var(--text-primary); }
+
+        .selected-preview {
+            background: var(--card); border-radius: 20px; padding: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 20px;
+            min-height: 140px; display: flex; flex-wrap: wrap; gap: 10px; align-content: flex-start;
+        }
+        .selected-preview .sel-item {
+            width: 72px; height: 72px; border-radius: 14px; background: #F5F2EE;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 12px; font-weight: 700; color: var(--text-secondary); letter-spacing: 0.5px;
+            position: relative; cursor: pointer;
+        }
+        .selected-preview .sel-item .remove {
+            position: absolute; top: -6px; right: -6px; width: 20px; height: 20px;
+            border-radius: 50%; background: var(--text-primary); color: #fff;
+            border: none; font-size: 12px; display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+        }
+        .selected-preview .sel-placeholder {
+            width: 100%; text-align: center; color: var(--nav-inactive); font-size: 14px; padding: 40px 0;
+        }
+
+        .section-title {
+            display: flex; justify-content: space-between; align-items: baseline;
+            margin-bottom: 16px;
+        }
+        .section-title h2 {
+            font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 3px;
+            color: var(--text-secondary);
+        }
+        .section-title .count { font-size: 13px; color: var(--text-secondary); }
+
+        .category-chips {
+            display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; scrollbar-width: none;
+        }
+        .category-chips::-webkit-scrollbar { display: none; }
+        .chip {
+            padding: 8px 16px; border-radius: 20px; border: 1px solid var(--divider);
+            background: transparent; font-family: 'Inter', sans-serif;
+            font-size: 13px; font-weight: 500; color: var(--text-secondary);
+            cursor: pointer; white-space: nowrap; transition: all 0.2s;
+        }
+        .chip.active { background: var(--text-primary); color: #fff; border-color: var(--text-primary); }
+
+        .closet-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding-bottom: 24px;
+        }
+        .closet-item { text-align: center; position: relative; }
+        .item-thumb {
+            width: 100%; aspect-ratio: 0.8; background: var(--card); border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 13px; font-weight: 700; color: var(--text-secondary); letter-spacing: 1px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 6px;
+            cursor: pointer; transition: all 0.15s; border: 2px solid transparent;
+        }
+        .item-thumb:active { transform: scale(0.96); }
+        .item-thumb.selected { border-color: var(--text-primary); }
+        .item-thumb .check {
+            position: absolute; top: 6px; right: 6px; width: 20px; height: 20px;
+            border-radius: 50%; background: var(--text-primary); color: #fff;
+            font-size: 12px; display: flex; align-items: center; justify-content: center;
+        }
+        .item-label { font-size: 11px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 2px; }
+
+        .bottom-bar {
+            padding: 12px 20px 28px;
+        }
+        .create-btn {
+            width: 100%; padding: 16px; border-radius: 16px; border: none;
+            background: var(--text-primary); color: #fff; font-size: 16px; font-weight: 600;
+            cursor: pointer; font-family: 'Inter', sans-serif;
+            transition: transform 0.15s; display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .create-btn:active { transform: scale(0.98); }
+        .create-btn:disabled { background: var(--nav-inactive); cursor: not-allowed; }
+    </style>
+</head>
+<body>
+    <div class="phone-frame">
+        <div class="notch"></div>
+        <div class="status-bar">
+            <span class="time">09:41</span>
+            <div class="icons">
+                <svg viewBox="0 0 24 24"><path d="M6 10l0 4"/><path d="M10 8l0 8"/><path d="M14 6l0 12"/><path d="M18 9l0 6"/></svg>
+                <svg viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/></svg>
+                <svg viewBox="0 0 24 24"><rect x="2" y="7" width="16" height="10" rx="2"/><path d="M22 11v2"/></svg>
+            </div>
+        </div>
+
+        <div class="nav-header">
+            <button class="back" onclick="history.back()" aria-label="Back">
+                <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+            </button>
+            <h1>Create Outfit</h1>
+            <button class="save">Save</button>
+        </div>
+
+        <div class="content">
+            <input class="outfit-name-input" type="text" placeholder="Outfit name..." value="Summer Casual">
+
+            <div class="selected-preview">
+                <div class="sel-item">TO<button class="remove">&times;</button></div>
+                <div class="sel-item">BT<button class="remove">&times;</button></div>
+                <div class="sel-item">SH<button class="remove">&times;</button></div>
+            </div>
+
+            <div class="section-title">
+                <h2>Select from Closet</h2>
+                <span class="count">47 items</span>
+            </div>
+
+            <div class="category-chips">
+                <button class="chip active">All</button>
+                <button class="chip">Tops</button>
+                <button class="chip">Bottoms</button>
+                <button class="chip">Dresses</button>
+                <button class="chip">Shoes</button>
+                <button class="chip">Bags</button>
+            </div>
+
+            <div class="closet-grid">
+                <div class="closet-item">
+                    <div class="item-thumb selected" style="background:#F5F2EE;">TO<div class="check">&#10003;</div></div>
+                    <div class="item-label">Linen Shirt</div>
+                </div>
+                <div class="closet-item">
+                    <div class="item-thumb selected" style="background:#EDE9E4;">BT<div class="check">&#10003;</div></div>
+                    <div class="item-label">Trousers</div>
+                </div>
+                <div class="closet-item">
+                    <div class="item-thumb" style="background:#F5F2EE;">TO</div>
+                    <div class="item-label">Knit Polo</div>
+                </div>
+                <div class="closet-item">
+                    <div class="item-thumb selected" style="background:#EDE9E4;">SH<div class="check">&#10003;</div></div>
+                    <div class="item-label">Sneakers</div>
+                </div>
+                <div class="closet-item">
+                    <div class="item-thumb" style="background:#F5F2EE;">DR</div>
+                    <div class="item-label">Day Dress</div>
+                </div>
+                <div class="closet-item">
+                    <div class="item-thumb" style="background:#EDE9E4;">CO</div>
+                    <div class="item-label">Trench</div>
+                </div>
+                <div class="closet-item">
+                    <div class="item-thumb" style="background:#F5F2EE;">TO</div>
+                    <div class="item-label">Tank Top</div>
+                </div>
+                <div class="closet-item">
+                    <div class="item-thumb" style="background:#EDE9E4;">BT</div>
+                    <div class="item-label">Denim</div>
+                </div>
+                <div class="closet-item">
+                    <div class="item-thumb" style="background:#F5F2EE;">BG</div>
+                    <div class="item-label">Tote</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bottom-bar">
+            <button class="create-btn">Create Outfit (3)</button>
+        </div>
+    </div>
+</body>
+</html>

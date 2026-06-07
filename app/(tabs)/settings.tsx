@@ -3,27 +3,19 @@ import {
   Text,
   ScrollView,
   Pressable,
-  TextInput,
   StyleSheet,
   Alert,
-  Platform,
   Switch,
+  Animated,
 } from "react-native";
 import { useEffect, useState, useRef, useMemo } from "react";
 import { useRouter } from "expo-router";
-import * as FileSystem from "expo-file-system";
-import * as Sharing from "expo-sharing";
 import { Ionicons } from "@expo/vector-icons";
-import { getSetting, setSetting } from "../../src/db/database";
+import { getOutfits, getDailyLogs } from "../../src/db/database";
 import { useClothingStore } from "../../src/store/clothingStore";
-import { importClosetData } from "../../src/services/importCloset";
-import {
-  Colors,
-  Spacing,
-  Radius,
-  FontSize,
-  TouchMin,
-} from "../../src/design/tokens";
+import { DailyLog } from "../../src/types";
+import { PageTransition } from "../../src/components/PageTransition";
+import { Colors, Spacing, Radius, FontSize, TouchMin } from "../../src/design/tokens";
 
 /* ─── helpers ─── */
 function parsePrice(p: string): number {
@@ -35,24 +27,35 @@ function formatCurrency(n: number): string {
   return "¥" + Math.round(n).toLocaleString();
 }
 
-/* ─── sub-components ─── */
+function calculateStreak(logs: DailyLog[]): number {
+  if (logs.length === 0) return 0;
+  const uniqueDates = Array.from(new Set(logs.map((l) => l.date))).sort(
+    (a, b) => b.localeCompare(a)
+  );
+  const today = new Date().toISOString().slice(0, 10);
+  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  let checkDate = uniqueDates[0];
+  if (checkDate !== today && checkDate !== yesterday) return 0;
+  let streak = 0;
+  let d = new Date(checkDate + "T00:00:00");
+  for (const dateStr of uniqueDates) {
+    const current = d.toISOString().slice(0, 10);
+    if (dateStr === current) {
+      streak++;
+      d.setDate(d.getDate() - 1);
+    } else {
+      break;
+    }
+  }
+  return streak;
+}
 
-function StatCard({
-  value,
-  label,
-  onPress,
-}: {
-  value: string;
-  label: string;
-  onPress?: () => void;
-}) {
+/* ─── sub-components ─── */
+function StatItem({ value, label, onPress }: { value: string; label: string; onPress?: () => void }) {
   return (
-    <Pressable
-      style={({ pressed }) => [S.statCard, pressed && S.statCardPressed]}
-      onPress={onPress}
-    >
-      <Text style={S.statValue}>{value}</Text>
-      <Text style={S.statLabel}>{label}</Text>
+    <Pressable style={{ alignItems: "center" }} onPress={onPress}>
+      <Text style={S.statBig}>{value}</Text>
+      <Text style={S.statSmall}>{label}</Text>
     </Pressable>
   );
 }
@@ -65,8 +68,6 @@ function SettingRow({
   rightElement,
   danger,
   onPress,
-  iconColor,
-  iconBg,
 }: {
   icon: string;
   title: string;
@@ -75,68 +76,102 @@ function SettingRow({
   rightElement?: React.ReactNode;
   danger?: boolean;
   onPress?: () => void;
-  iconColor?: string;
-  iconBg?: string;
 }) {
-  const bg = iconBg ?? (danger ? "rgba(224,122,95,0.15)" : Colors.accentLight);
-  const color = iconColor ?? (danger ? Colors.danger : Colors.accent);
-
   return (
-    <Pressable
-      style={({ pressed }) => [S.row, pressed && S.rowPressed]}
-      onPress={onPress}
-      disabled={!onPress}
-    >
-      <View style={[S.rowIcon, { backgroundColor: bg }]}>
-        <Ionicons name={icon as any} size={18} color={color} />
+    <Pressable style={({ pressed }) => [S.row, pressed && S.rowPressed]} onPress={onPress} disabled={!onPress}>
+      <View style={S.rowIcon}>
+        <Ionicons name={icon as any} size={18} color={Colors.textSecondary} />
       </View>
       <View style={{ flex: 1 }}>
-        <Text style={[S.rowText, danger && { color: Colors.danger }]}>
-          {title}
-        </Text>
+        <Text style={[S.rowText, danger && { color: Colors.danger }]}>{title}</Text>
         {subtitle ? <Text style={S.rowSubtitle}>{subtitle}</Text> : null}
       </View>
       {value ? <Text style={S.rowValue}>{value}</Text> : null}
       {rightElement}
-      {!rightElement && (
-        <Ionicons name="chevron-forward" size={16} color={Colors.textTertiary} />
-      )}
+      {!rightElement && <Ionicons name="chevron-forward" size={16} color={Colors.textTertiary} />}
     </Pressable>
   );
 }
 
-function SectionCard({
-  children,
-  style,
-}: {
-  children: React.ReactNode;
-  style?: any;
-}) {
+function SectionCard({ children, style }: { children: React.ReactNode; style?: any }) {
   return <View style={[S.card, style]}>{children}</View>;
+}
+
+function SectionTitle({ title }: { title: string }) {
+  return <Text style={S.sectionTitle}>{title}</Text>;
+}
+
+/* ─── floating item with animation ─── */
+function FloatItem({
+  style,
+  children,
+  delay,
+}: {
+  style?: any;
+  children: React.ReactNode;
+  delay: number;
+}) {
+  const anim = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(anim, {
+          toValue: 1,
+          duration: 3000,
+          delay,
+          useNativeDriver: true,
+        }),
+        Animated.timing(anim, {
+          toValue: 0,
+          duration: 3000,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [anim, delay]);
+
+  const translateY = anim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -8],
+  });
+  const rotate = anim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["0deg", "2deg"],
+  });
+
+  return (
+    <Animated.View
+      style={[
+        S.floatItem,
+        style,
+        { transform: [{ translateY }, { rotate }] },
+      ]}
+    >
+      {children}
+    </Animated.View>
+  );
 }
 
 /* ─── main screen ─── */
 export default function SettingsScreen() {
   const router = useRouter();
   const items = useClothingStore((s) => s.items);
-  const loadClothing = useClothingStore((s) => s.loadClothing);
 
-  const [syncUrl, setSyncUrl] = useState("http://8.162.26.192/sync");
-  const [token, setToken] = useState("");
-  const [importing, setImporting] = useState(false);
-  const [importMsg, setImportMsg] = useState("");
   const [showPrice, setShowPrice] = useState(true);
   const [dailyReminder, setDailyReminder] = useState(false);
-  const [focusedInput, setFocusedInput] = useState<string | null>(null);
 
-  const fileRef = useRef<HTMLInputElement>(null);
+  // Extra stats
+  const [outfitCount, setOutfitCount] = useState(0);
+  const [streak, setStreak] = useState(0);
 
   useEffect(() => {
     (async () => {
-      const u = await getSetting("syncUrl");
-      const t = await getSetting("token");
-      if (u) setSyncUrl(u);
-      if (t) setToken(t);
+      const outfits = await getOutfits();
+      setOutfitCount(outfits.length);
+      const logs = await getDailyLogs();
+      setStreak(calculateStreak(logs));
     })();
   }, []);
 
@@ -147,360 +182,89 @@ export default function SettingsScreen() {
     return { total, totalPrice, brands };
   }, [items]);
 
-  const handleClear = () => {
-    if (typeof window !== "undefined" && window.confirm) {
-      if (
-        window.confirm("确定要删除所有衣物数据吗？此操作不可恢复")
-      ) {
-        try {
-          localStorage.removeItem("@wardrobe/clothing");
-          localStorage.removeItem("@wardrobe/outfits");
-          localStorage.removeItem("@wardrobe/dailyLogs");
-          const store = useClothingStore.getState();
-          store.items = [];
-          store.loadClothing();
-          window.alert("已清空衣橱，请刷新页面");
-        } catch (e) {
-          window.alert("清空失败: " + (e as any).message);
-        }
-      }
-    }
-  };
-
-  const SwitchControl = ({
-    value,
-    onChange,
-  }: {
-    value: boolean;
-    onChange: (v: boolean) => void;
-  }) => (
+  const SwitchControl = ({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) => (
     <Switch
       value={value}
       onValueChange={onChange}
-      trackColor={{
-        false: Colors.surfaceHighlight,
-        true: Colors.accentMuted,
-      }}
+      trackColor={{ false: Colors.surfaceHighlight, true: Colors.accentMuted }}
       thumbColor={value ? Colors.accent : Colors.textTertiary}
       ios_backgroundColor={Colors.surfaceHighlight}
     />
   );
 
   return (
-    <ScrollView style={S.container} showsVerticalScrollIndicator={false}>
-      {/* ── Profile + Stats Header ── */}
-      <View style={S.header}>
-        <Pressable
-          style={({ pressed }) => [
-            S.profileCard,
-            pressed && S.profileCardPressed,
-          ]}
-          onPress={() => router.push("/settings/statistics")}
-        >
-          <View style={S.profileAccent} />
-          <View style={S.profileIconWrap}>
-            <Ionicons name="shirt-outline" size={28} color={Colors.accent} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={S.profileTitle}>Wardrobe</Text>
-            <Text style={S.profileSub}>
-              {summary.total} 件衣物 · 智能衣橱
-            </Text>
-          </View>
-          <Ionicons
-            name="chevron-forward"
-            size={18}
-            color={Colors.textTertiary}
-          />
-        </Pressable>
-
-        <View style={S.statsRow}>
-          <StatCard
-            value={String(summary.total)}
-            label="总件数"
-            onPress={() => router.push("/settings/statistics")}
-          />
-          <StatCard
-            value={formatCurrency(summary.totalPrice)}
-            label="总价值"
-            onPress={() => router.push("/settings/statistics")}
-          />
-          <StatCard
-            value={String(summary.brands)}
-            label="品牌数"
-            onPress={() => router.push("/settings/statistics")}
-          />
+    <PageTransition>
+    <ScrollView style={S.container} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+      {/* ── Floating Items + Brand ── */}
+      <View style={S.meHeader}>
+        <View style={S.floatingItems}>
+          <FloatItem style={{ top: 10, left: 30 }} delay={0}>
+            <Ionicons name="shirt" size={28} color={Colors.textSecondary} />
+          </FloatItem>
+          <FloatItem style={{ top: 40, left: 110, width: 56, height: 56 }} delay={1500}>
+            <Ionicons name="footsteps" size={24} color={Colors.textSecondary} />
+          </FloatItem>
+          <FloatItem style={{ top: 15, right: 40 }} delay={3000}>
+            <Ionicons name="bag" size={28} color={Colors.textSecondary} />
+          </FloatItem>
+          <FloatItem style={{ top: 75, left: 60, width: 52, height: 52 }} delay={2000}>
+            <Ionicons name="glasses" size={22} color={Colors.textSecondary} />
+          </FloatItem>
+          <FloatItem style={{ top: 70, right: 70, width: 48, height: 48 }} delay={4500}>
+            <Ionicons name="watch" size={20} color={Colors.textSecondary} />
+          </FloatItem>
         </View>
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6 }}>
+          <Text style={S.brandName}>Wardrobe</Text>
+          <Ionicons name="star" size={20} color={Colors.accent} />
+        </View>
+        <Text style={S.brandSub}>Curating since {new Date().getFullYear()}</Text>
       </View>
 
-      {/* ── 数据管理 ── */}
-      <View style={S.section}>
-        <Text style={S.sectionLabel}>数据管理</Text>
-        <SectionCard>
-          <SettingRow
-            icon="share-outline"
-            title="导出备份"
-            subtitle="将数据库保存到本地"
-            iconColor={Colors.catBag}
-            iconBg="rgba(143,200,212,0.15)"
-            onPress={async () => {
-              try {
-                const dbPath =
-                  (FileSystem as any).documentDirectory + "SQLite/wardrobe.db";
-                await Sharing.shareAsync(dbPath, { dialogTitle: "保存备份" });
-              } catch {
-                Alert.alert("提示", "备份功能开发中");
-              }
-            }}
-          />
-          <SettingRow
-            icon="cloud-upload-outline"
-            title="恢复备份"
-            subtitle="从本地文件恢复数据"
-            iconColor={Colors.catBag}
-            iconBg="rgba(143,200,212,0.15)"
-            onPress={() => Alert.alert("提示", "开发中")}
-          />
-        </SectionCard>
+      {/* ── Stats Row ── */}
+      <View style={S.statsRow}>
+        <StatItem value={String(summary.total)} label="Items" onPress={() => router.push("/settings/statistics")} />
+        <StatItem value={String(outfitCount)} label="Outfits" onPress={() => router.push("/settings/statistics")} />
+        <StatItem value={String(streak)} label="Streak" onPress={() => router.push("/settings/statistics")} />
       </View>
 
-      {/* ── 导入 ── */}
-      <View style={S.section}>
-        <Text style={S.sectionLabel}>导入</Text>
-        <SectionCard>
-          <Pressable
-            style={({ pressed }) => [S.importBtn, pressed && S.importBtnPressed]}
-            onPress={() => {
-              if (Platform.OS === "web" && fileRef.current) {
-                fileRef.current.click();
-              } else {
-                Alert.alert("提示", "请在网页版使用此功能");
-              }
-            }}
-            disabled={importing}
-          >
-            <View
-              style={[
-                S.rowIcon,
-                { backgroundColor: "rgba(107,155,111,0.15)" },
-              ]}
-            >
-              <Ionicons
-                name="cloud-download"
-                size={20}
-                color={Colors.success}
-              />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={S.importTitle}>从备份文件导入</Text>
-              <Text style={S.importDesc}>
-                {importing ? importMsg : "支持 .zip 格式的衣橱备份"}
-              </Text>
-            </View>
-            <Ionicons
-              name="chevron-forward"
-              size={16}
-              color={Colors.textTertiary}
-            />
-          </Pressable>
-          {Platform.OS === "web" && (
-            <input
-              ref={fileRef as any}
-              type="file"
-              accept=".zip"
-              style={{ display: "none" }}
-              onChange={async (e: any) => {
-                const file = e.target.files?.[0];
-                if (!file) return;
-                setImporting(true);
-                setImportMsg("正在读取文件...");
-                try {
-                  const buffer = await file.arrayBuffer();
-                  const result = await importClosetData(buffer, (p) => {
-                    setImportMsg(`导入衣物 ${p.current}/${p.total}`);
-                  });
-                  await loadClothing();
-                  setImportMsg(`完成！导入 ${result.clothing} 件衣物`);
-                  setImporting(false);
-                  Alert.alert("导入完成", `成功导入 ${result.clothing} 件衣物`);
-                } catch (err: any) {
-                  setImporting(false);
-                  setImportMsg("");
-                  Alert.alert("导入失败", err.message);
-                }
-              }}
-            />
-          )}
-        </SectionCard>
-      </View>
+      {/* ── Backup ── */}
+      <SectionTitle title="Backup" />
+      <SectionCard>
+        <SettingRow icon="save-outline" title="备份与恢复" subtitle="导出、导入、云同步、清空数据" onPress={() => router.push("/settings/backup")} />
+      </SectionCard>
 
-      {/* ── 同步设置 ── */}
-      <View style={S.section}>
-        <Text style={S.sectionLabel}>同步设置</Text>
-        <SectionCard>
-          <View style={S.inputRow}>
-            <View style={S.inputRowHeader}>
-              <Ionicons
-                name="link-outline"
-                size={16}
-                color={Colors.catOuter}
-              />
-              <Text style={S.inputLabel}>服务器地址</Text>
-            </View>
-            <TextInput
-              style={[
-                S.input,
-                focusedInput === "syncUrl" && {
-                  borderColor: Colors.accentMuted,
-                },
-              ]}
-              value={syncUrl}
-              onChangeText={setSyncUrl}
-              onFocus={() => setFocusedInput("syncUrl")}
-              onBlur={() => {
-                setFocusedInput(null);
-                setSetting("syncUrl", syncUrl);
-              }}
-              placeholder="http://8.162.26.192/sync"
-              placeholderTextColor={Colors.textTertiary}
-            />
-          </View>
-          <View style={S.inputRow}>
-            <View style={S.inputRowHeader}>
-              <Ionicons
-                name="key-outline"
-                size={16}
-                color={Colors.catOuter}
-              />
-              <Text style={S.inputLabel}>Token</Text>
-            </View>
-            <TextInput
-              style={[
-                S.input,
-                focusedInput === "token" && {
-                  borderColor: Colors.accentMuted,
-                },
-              ]}
-              value={token}
-              onChangeText={setToken}
-              onFocus={() => setFocusedInput("token")}
-              onBlur={() => {
-                setFocusedInput(null);
-                setSetting("token", token);
-              }}
-              secureTextEntry
-              placeholder="登录后获取"
-              placeholderTextColor={Colors.textTertiary}
-            />
-          </View>
-        </SectionCard>
-      </View>
+      {/* ── Stats ── */}
+      <SectionTitle title="Stats" />
+      <SectionCard>
+        <SettingRow icon="bar-chart-outline" title="统计信息" subtitle="查看衣橱数据洞察" value="查看" onPress={() => router.push("/settings/statistics")} />
+      </SectionCard>
 
-      {/* ── 统计与分析 ── */}
-      <View style={S.section}>
-        <Text style={S.sectionLabel}>统计与分析</Text>
-        <SectionCard>
-          <SettingRow
-            icon="bar-chart-outline"
-            title="统计信息"
-            subtitle="查看衣橱数据洞察"
-            value="查看"
-            iconColor={Colors.accent}
-            iconBg={Colors.accentLight}
-            onPress={() => router.push("/settings/statistics")}
-          />
-        </SectionCard>
-      </View>
+      {/* ── Manage ── */}
+      <SectionTitle title="Manage" />
+      <SectionCard>
+        <SettingRow icon="folder-open-outline" title="分类管理" subtitle="管理衣物分类与标签" onPress={() => router.push("/settings/categories")} />
+        <SettingRow icon="archive-outline" title="回收站" subtitle="查看已删除的衣物" onPress={() => router.push("/settings/archive")} />
+      </SectionCard>
 
-      {/* ── 管理 ── */}
-      <View style={S.section}>
-        <Text style={S.sectionLabel}>管理</Text>
-        <SectionCard>
-          <SettingRow
-            icon="folder-open-outline"
-            title="分类管理"
-            subtitle="管理衣物分类与标签"
-            iconColor={Colors.catShoes}
-            iconBg="rgba(143,212,168,0.15)"
-            onPress={() => router.push("/settings/categories")}
-          />
-          <SettingRow
-            icon="archive-outline"
-            title="回收站"
-            subtitle="查看已删除的衣物"
-            iconColor={Colors.catShoes}
-            iconBg="rgba(143,212,168,0.15)"
-            onPress={() => router.push("/settings/archive")}
-          />
-        </SectionCard>
-      </View>
+      {/* ── Preferences ── */}
+      <SectionTitle title="Preferences" />
+      <SectionCard>
+        <SettingRow icon="cash-outline" title="显示价格" subtitle="在衣物列表中展示价格" rightElement={<SwitchControl value={showPrice} onChange={setShowPrice} />} />
+        <SettingRow icon="notifications-outline" title="每日提醒" subtitle="每日推送穿搭建议" rightElement={<SwitchControl value={dailyReminder} onChange={setDailyReminder} />} />
+      </SectionCard>
 
-      {/* ── 偏好设置 ── */}
-      <View style={S.section}>
-        <Text style={S.sectionLabel}>偏好设置</Text>
-        <SectionCard>
-          <SettingRow
-            icon="cash-outline"
-            title="显示价格"
-            subtitle="在衣物列表中展示价格"
-            iconColor={Colors.catDress}
-            iconBg="rgba(212,143,179,0.15)"
-            rightElement={
-              <SwitchControl value={showPrice} onChange={setShowPrice} />
-            }
-          />
-          <SettingRow
-            icon="notifications-outline"
-            title="每日提醒"
-            subtitle="每日推送穿搭建议"
-            iconColor={Colors.catDress}
-            iconBg="rgba(212,143,179,0.15)"
-            rightElement={
-              <SwitchControl value={dailyReminder} onChange={setDailyReminder} />
-            }
-          />
-        </SectionCard>
-      </View>
+      {/* ── About ── */}
+      <SectionTitle title="About" />
+      <SectionCard>
+        <SettingRow icon="information-circle-outline" title="版本" value="v1.0" />
+        <SettingRow icon="document-text-outline" title="开源许可" subtitle="第三方库许可证" onPress={() => Alert.alert("开源许可", "开发中")} />
+      </SectionCard>
 
-      {/* ── 关于 ── */}
-      <View style={S.section}>
-        <Text style={S.sectionLabel}>关于</Text>
-        <SectionCard>
-          <SettingRow
-            icon="information-circle-outline"
-            title="版本"
-            value="v1.0"
-            iconColor={Colors.textSecondary}
-            iconBg="rgba(156,163,175,0.15)"
-          />
-          <SettingRow
-            icon="document-text-outline"
-            title="开源许可"
-            subtitle="第三方库许可证"
-            iconColor={Colors.textSecondary}
-            iconBg="rgba(156,163,175,0.15)"
-            onPress={() => Alert.alert("开源许可", "开发中")}
-          />
-        </SectionCard>
-      </View>
-
-      {/* ── 危险操作 ── */}
-      <View style={S.section}>
-        <Text style={S.sectionLabel}>危险操作</Text>
-        <SectionCard>
-          <SettingRow
-            icon="trash-outline"
-            title="清空衣橱"
-            subtitle="删除所有衣物数据，不可恢复"
-            danger
-            onPress={handleClear}
-          />
-        </SectionCard>
-      </View>
-
-      <Text style={S.footer}>© 2025 Wardrobe</Text>
+      <Text style={S.footer}>WARDROBE &middot; V1.0</Text>
       <View style={{ height: 60 }} />
     </ScrollView>
+    </PageTransition>
   );
 }
 
@@ -508,173 +272,101 @@ export default function SettingsScreen() {
 const S = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bg },
 
-  /* Header */
-  header: { paddingTop: 60, paddingHorizontal: Spacing.xl, paddingBottom: Spacing.lg },
-
-  profileCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: Colors.surfaceElevated,
-    borderRadius: Radius.xl,
-    padding: Spacing.lg,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    marginBottom: Spacing.lg,
-    overflow: "hidden",
-  },
-  profileCardPressed: {
-    transform: [{ scale: 0.98 }],
-    backgroundColor: Colors.surfaceHighlight,
-  },
-  profileAccent: {
+  /* Me Header */
+  meHeader: { paddingTop: 20, paddingBottom: 28, alignItems: "center" },
+  floatingItems: { position: "relative", width: 280, height: 140, marginBottom: 16 },
+  floatItem: {
     position: "absolute",
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: 3,
-    backgroundColor: Colors.accent,
-  },
-  profileIconWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: Radius.md,
-    backgroundColor: Colors.accentLight,
+    width: 64,
+    height: 64,
+    borderRadius: 16,
+    backgroundColor: Colors.surface,
     justifyContent: "center",
     alignItems: "center",
-    marginRight: Spacing.md,
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 16,
+    elevation: 3,
   },
-  profileTitle: {
-    fontSize: FontSize.lg,
-    fontWeight: "700",
+  brandName: {
+    fontFamily: "PlayfairDisplay_600SemiBold",
+    fontSize: 32,
     color: Colors.textPrimary,
+    textAlign: "center",
   },
-  profileSub: {
-    fontSize: FontSize.sm,
-    color: Colors.textSecondary,
-    marginTop: 2,
-  },
+  brandSub: { fontSize: 14, color: Colors.textSecondary, marginTop: 4, fontWeight: "400" },
 
-  statsRow: {
-    flexDirection: "row",
-    gap: Spacing.md,
+  /* Stats */
+  statsRow: { flexDirection: "row", justifyContent: "center", gap: 40, marginBottom: 28, paddingHorizontal: 20 },
+  statBig: {
+    fontFamily: "PlayfairDisplay_600SemiBold",
+    fontSize: 36,
+    color: Colors.textPrimary,
+    lineHeight: 40,
+    marginBottom: 6,
   },
-  statCard: {
-    flex: 1,
-    backgroundColor: Colors.surfaceElevated,
-    borderRadius: Radius.lg,
-    paddingVertical: Spacing.lg,
-    paddingHorizontal: Spacing.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    alignItems: "center",
-  },
-  statCardPressed: {
-    transform: [{ scale: 0.96 }],
-    backgroundColor: Colors.surfaceHighlight,
-  },
-  statValue: {
-    fontSize: FontSize.xl,
-    fontWeight: "800",
-    color: Colors.accent,
-    letterSpacing: -0.5,
-  },
-  statLabel: {
-    fontSize: FontSize.sm,
+  statSmall: {
+    fontSize: 11,
+    fontWeight: "500",
+    textTransform: "uppercase",
+    letterSpacing: 2,
     color: Colors.textSecondary,
-    marginTop: 4,
   },
 
   /* Section */
-  section: { marginBottom: Spacing.xxl, paddingHorizontal: Spacing.xl },
-  sectionLabel: {
-    fontSize: FontSize.sm,
-    fontWeight: "600",
+  sectionTitle: {
+    fontSize: 12,
+    fontWeight: "500",
+    textTransform: "uppercase",
+    letterSpacing: 3,
     color: Colors.textSecondary,
-    marginBottom: Spacing.sm,
-    paddingLeft: 4,
+    marginBottom: 12,
+    marginTop: 24,
+    paddingHorizontal: 20,
   },
 
   card: {
-    backgroundColor: Colors.surfaceElevated,
-    borderRadius: Radius.xl,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.lg,
     overflow: "hidden",
+    marginHorizontal: 20,
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 8,
+    elevation: 3,
   },
 
   /* Row */
   row: {
     flexDirection: "row",
     alignItems: "center",
-    padding: Spacing.lg,
+    paddingVertical: 16,
+    paddingHorizontal: 18,
     borderBottomWidth: 1,
-    borderColor: Colors.divider,
+    borderColor: Colors.bg,
     minHeight: TouchMin,
+    gap: 14,
   },
-  rowPressed: {
-    backgroundColor: Colors.surfaceHighlight,
-  },
+  rowPressed: { backgroundColor: Colors.surfaceHighlight },
   rowIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
-    backgroundColor: Colors.accentLight,
+    width: 28,
+    height: 28,
     justifyContent: "center",
     alignItems: "center",
-    marginRight: Spacing.md,
+    flexShrink: 0,
   },
-  rowText: {
-    fontSize: FontSize.base,
-    color: Colors.textPrimary,
-    fontWeight: "500",
-  },
-  rowSubtitle: {
-    fontSize: FontSize.sm,
-    color: Colors.textTertiary,
-    marginTop: 2,
-  },
-  rowValue: {
-    fontSize: FontSize.sm,
-    color: Colors.textSecondary,
-    marginRight: Spacing.sm,
-  },
-
-  /* Import */
-  importBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: Spacing.lg,
-    minHeight: TouchMin,
-  },
-  importBtnPressed: {
-    backgroundColor: Colors.surfaceHighlight,
-  },
-  importTitle: {
-    fontSize: FontSize.base,
-    color: Colors.textPrimary,
-    fontWeight: "500",
-  },
-  importDesc: {
-    fontSize: FontSize.sm,
-    color: Colors.textTertiary,
-    marginTop: 2,
-  },
+  rowText: { fontSize: FontSize.base, color: Colors.textPrimary, fontWeight: "500" },
+  rowSubtitle: { fontSize: FontSize.sm, color: Colors.textTertiary, marginTop: 2 },
+  rowValue: { fontSize: FontSize.sm, color: Colors.textSecondary, marginRight: Spacing.sm },
 
   /* Input */
-  inputRow: { padding: Spacing.lg, borderBottomWidth: 1, borderColor: Colors.divider },
-  inputRowHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginBottom: 6,
-  },
-  inputLabel: {
-    fontSize: FontSize.sm,
-    color: Colors.textSecondary,
-    fontWeight: "500",
-  },
+  inputRow: { padding: Spacing.lg, borderBottomWidth: 1, borderColor: Colors.bg },
+  inputRowHeader: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 6 },
+  inputLabel: { fontSize: FontSize.sm, color: Colors.textSecondary, fontWeight: "500" },
   input: {
-    backgroundColor: Colors.surface,
+    backgroundColor: Colors.surfaceHighlight,
     borderRadius: Radius.md,
     padding: 12,
     fontSize: FontSize.base,
@@ -683,11 +375,33 @@ const S = StyleSheet.create({
     borderColor: Colors.border,
   },
 
+  /* Buttons */
+  saveBtn: {
+    backgroundColor: Colors.textPrimary,
+    borderRadius: Radius.full,
+    paddingVertical: 12,
+    alignItems: "center",
+    marginTop: 4,
+  },
+  saveBtnText: { color: "#fff", fontSize: 15, fontWeight: "600" },
+  actionBtn: {
+    backgroundColor: Colors.surfaceHighlight,
+    borderRadius: Radius.full,
+    paddingVertical: 12,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  actionBtnText: { color: Colors.textPrimary, fontSize: 15, fontWeight: "600" },
+
   /* Footer */
   footer: {
     textAlign: "center",
     color: Colors.textTertiary,
     fontSize: FontSize.xs,
-    marginTop: Spacing.xxxl,
+    marginTop: 32,
+    fontWeight: "500",
+    textTransform: "uppercase",
+    letterSpacing: 3,
   },
 });

@@ -8,12 +8,13 @@ interface Props {
   color?: string;
   bg?: string;
   onPress?: () => void;
+  style?: any;
 }
 
-export function IconButton({ name, size = 22, color = Colors.textPrimary, bg = "rgba(255,255,255,0.1)", onPress }: Props) {
+export function IconButton({ name, size = 22, color = Colors.textPrimary, bg = Colors.surfaceElevated, onPress, style }: Props) {
   return (
     <Pressable
-      style={({ pressed }) => [S.btn, { backgroundColor: bg }, pressed && S.pressed]}
+      style={({ pressed }) => [S.btn, { backgroundColor: bg }, pressed && S.pressed, style]}
       onPress={onPress}
     >
       <Ionicons name={name} size={size} color={color} />

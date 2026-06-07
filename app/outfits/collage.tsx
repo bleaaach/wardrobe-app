@@ -11,16 +11,18 @@ import {
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState, useEffect, useCallback } from "react";
 import { Ionicons } from "@expo/vector-icons";
+import { getAllClothing, getOutfits, addOutfit, updateOutfit, updateClothing } from "../../src/db/database";
 import { Clothing, Outfit, OutfitLayoutItem } from "../../src/types";
-import { getAllClothing, getOutfits, addOutfit, updateOutfit } from "../../src/db/database";
 import { CollageCanvas } from "../../src/components/CollageCanvas";
 import { AsyncImage } from "../../src/components/AsyncImage";
-import { Colors, Spacing, Radius, FontSize, TouchMin, PressedOpacity } from "../../src/design/tokens";
+import { useThemeColors } from "../../src/hooks/useThemeColors";
+import { Spacing, Radius, FontSize, TouchMin, PressedOpacity, ThemeColors } from "../../src/design/tokens";
 
 const SCREEN = Dimensions.get("window");
 
 export default function CollageEditorScreen() {
   const router = useRouter();
+  const colors = useThemeColors();
   const { ids, outfitId, name: initialName } = useLocalSearchParams<{
     ids?: string;
     outfitId?: string;
@@ -52,7 +54,8 @@ export default function CollageEditorScreen() {
           if (outfit.layout) {
             try {
               setLayout(JSON.parse(outfit.layout));
-            } catch {
+            } catch (e) {
+              console.error("Parse outfit layout error:", e);
               setLayout([]);
             }
           }
@@ -107,63 +110,77 @@ export default function CollageEditorScreen() {
 
   if (loading) {
     return (
-      <View style={S.centered}>
-        <Text style={{ color: Colors.textTertiary }}>加载中...</Text>
+      <View style={S(colors).centered}>
+        <Text style={{ color: colors.textTertiary }}>加载中...</Text>
       </View>
     );
   }
 
   return (
-    <View style={S.container}>
+    <View style={S(colors).container}>
       {/* Header */}
-      <View style={S.header}>
-        <Pressable style={({ pressed }) => [S.iconBtn, pressed && S.pressed]} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color={Colors.textPrimary} />
+      <View style={S(colors).header}>
+        <Pressable style={({ pressed }) => [S(colors).iconBtn, pressed && S(colors).pressed]} onPress={() => router.back()}>
+          <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
         </Pressable>
-        <Text style={S.headerTitle}>{isEditing ? "编辑搭配" : "搭配拼图"}</Text>
-        <Pressable style={({ pressed }) => [S.saveHeaderBtn, pressed && S.pressed]} onPress={handleSave}>
-          <Text style={S.saveHeaderText}>保存</Text>
+        <Text style={S(colors).headerTitle}>{isEditing ? "编辑搭配" : "搭配拼图"}</Text>
+        <Pressable style={({ pressed }) => [S(colors).saveHeaderBtn, pressed && S(colors).pressed]} onPress={handleSave}>
+          <Text style={S(colors).saveHeaderText}>保存</Text>
         </Pressable>
       </View>
 
       {/* Name Input */}
-      <View style={S.inputWrap}>
+      <View style={S(colors).inputWrap}>
         <TextInput
-          style={S.input}
+          style={S(colors).input}
           value={name}
           onChangeText={setName}
           placeholder="给这套搭配起个名字"
-          placeholderTextColor={Colors.textTertiary}
+          placeholderTextColor={colors.textTertiary}
         />
       </View>
 
       {/* Collage Canvas */}
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={S.canvasWrap}
+        contentContainerStyle={S(colors).canvasWrap}
         showsVerticalScrollIndicator={false}
       >
         {selectedItems.length === 0 ? (
-          <View style={S.emptyCanvas}>
-            <Ionicons name="images-outline" size={48} color={Colors.textTertiary} />
-            <Text style={S.emptyText}>从下方选择衣物开始拼图</Text>
+          <View style={S(colors).emptyCanvas}>
+            <Ionicons name="images-outline" size={48} color={colors.textTertiary} />
+            <Text style={S(colors).emptyText}>从下方选择衣物开始拼图</Text>
           </View>
         ) : (
           <CollageCanvas
             items={selectedItems}
             initialLayout={layout}
             onLayoutChange={setLayout}
+            onItemImageCropped={async (clothingId, newUri) => {
+              const item = allClothing.find((c) => c.id === clothingId);
+              if (!item) return;
+              setAllClothing((prev) =>
+                prev.map((c) => {
+                  if (c.id !== clothingId) return c;
+                  if (c.imageNoBgUri) {
+                    return { ...c, imageNoBgUri: newUri };
+                  }
+                  return { ...c, imageUri: newUri };
+                })
+              );
+              await updateClothing(clothingId, item.imageNoBgUri ? { imageNoBgUri: newUri } : { imageUri: newUri });
+            }}
           />
         )}
       </ScrollView>
 
       {/* Clothing Selector */}
-      <View style={S.selectorWrap}>
-        <Text style={S.selectorTitle}>衣橱单品</Text>
+      <View style={S(colors).selectorWrap}>
+        <Text style={S(colors).selectorTitle}>衣橱单品</Text>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={S.selectorList}
+          contentContainerStyle={S(colors).selectorList}
         >
           {allClothing.map((item) => {
             const isSelected = selectedIds.has(item.id);
@@ -171,19 +188,19 @@ export default function CollageEditorScreen() {
               <Pressable
                 key={item.id}
                 style={({ pressed }) => [
-                  S.selectorItem,
-                  isSelected && S.selectorItemSelected,
-                  pressed && S.pressed,
+                  S(colors).selectorItem,
+                  isSelected && S(colors).selectorItemSelected,
+                  pressed && S(colors).pressed,
                 ]}
                 onPress={() => toggleItem(item.id)}
               >
                 <AsyncImage
                   uri={item.imageNoBgUri || item.imageUri}
-                  style={S.selectorImage}
+                  style={S(colors).selectorImage}
                 />
                 {isSelected && (
-                  <View style={S.selectorCheck}>
-                    <Ionicons name="checkmark-circle" size={18} color={Colors.accent} />
+                  <View style={S(colors).selectorCheck}>
+                    <Ionicons name="checkmark-circle" size={18} color={colors.accent} />
                   </View>
                 )}
               </Pressable>
@@ -195,9 +212,9 @@ export default function CollageEditorScreen() {
   );
 }
 
-const S = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.bg },
-  centered: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: Colors.bg },
+const S = (colors: ThemeColors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.bg },
+  centered: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: colors.bg },
 
   header: {
     flexDirection: "row",
@@ -211,31 +228,31 @@ const S = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: Colors.surfaceElevated,
+    backgroundColor: colors.surfaceElevated,
     justifyContent: "center",
     alignItems: "center",
   },
-  headerTitle: { fontSize: FontSize.lg, fontWeight: "700", color: Colors.textPrimary },
+  headerTitle: { fontSize: FontSize.lg, fontWeight: "700", color: colors.textPrimary },
   saveHeaderBtn: {
-    backgroundColor: Colors.accent,
+    backgroundColor: colors.accent,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: Radius.md,
     minHeight: 36,
     justifyContent: "center",
   },
-  saveHeaderText: { color: Colors.textInverse, fontWeight: "600", fontSize: FontSize.base },
+  saveHeaderText: { color: colors.textInverse, fontWeight: "600", fontSize: FontSize.base },
   pressed: { opacity: PressedOpacity },
 
   inputWrap: { paddingHorizontal: Spacing.xl, marginBottom: Spacing.md },
   input: {
-    backgroundColor: Colors.surfaceElevated,
+    backgroundColor: colors.surfaceElevated,
     borderRadius: Radius.xl,
     padding: Spacing.lg,
     fontSize: FontSize.base,
-    color: Colors.textPrimary,
+    color: colors.textPrimary,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: colors.border,
   },
 
   canvasWrap: {
@@ -246,27 +263,27 @@ const S = StyleSheet.create({
   emptyCanvas: {
     width: SCREEN.width - 40,
     height: SCREEN.width - 40,
-    backgroundColor: Colors.surface,
+    backgroundColor: colors.surface,
     borderRadius: Radius.lg,
     justifyContent: "center",
     alignItems: "center",
     alignSelf: "center",
   },
-  emptyText: { marginTop: Spacing.md, color: Colors.textTertiary, fontSize: FontSize.base },
+  emptyText: { marginTop: Spacing.md, color: colors.textTertiary, fontSize: FontSize.base },
 
   selectorWrap: {
-    backgroundColor: Colors.surfaceElevated,
+    backgroundColor: colors.surfaceElevated,
     borderTopLeftRadius: Radius.xl,
     borderTopRightRadius: Radius.xl,
     paddingTop: Spacing.lg,
     paddingBottom: 28,
     borderTopWidth: 1,
-    borderColor: Colors.border,
+    borderColor: colors.border,
   },
   selectorTitle: {
     fontSize: FontSize.sm,
     fontWeight: "600",
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
     marginLeft: Spacing.xl,
     marginBottom: Spacing.sm,
   },
@@ -279,14 +296,14 @@ const S = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: Radius.md,
-    backgroundColor: Colors.surface,
+    backgroundColor: colors.surface,
     overflow: "hidden",
     borderWidth: 2,
     borderColor: "transparent",
     position: "relative",
   },
   selectorItemSelected: {
-    borderColor: Colors.accent,
+    borderColor: colors.accent,
   },
   selectorImage: {
     width: "100%",

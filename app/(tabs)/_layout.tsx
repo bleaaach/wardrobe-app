@@ -7,10 +7,10 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors.accent,
+        tabBarActiveTintColor: Colors.textPrimary,
         tabBarInactiveTintColor: Colors.textTertiary,
         tabBarStyle: {
-          backgroundColor: Platform.OS === "ios" ? "rgba(10,10,10,0.92)" : Colors.bg,
+          backgroundColor: Colors.bg,
           borderTopColor: Colors.border,
           borderTopWidth: 1,
           height: Platform.OS === "ios" ? 88 : 64,
@@ -33,35 +33,20 @@ export default function TabLayout() {
         headerShown: false,
       }}
     >
-      <Tabs.Screen name="index" options={{ title: "首页", tabBarIcon: ({ color, size, focused }) => (
-        <View style={{ alignItems: "center" }}>
-          <Ionicons name={focused ? "home" : "home-outline"} size={size - 2} color={color} />
-          {focused && <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: Colors.accent, marginTop: 2, shadowColor: Colors.accent, shadowRadius: 4, shadowOpacity: 0.8 }} />}
-        </View>
+      <Tabs.Screen name="index" options={{ title: "首页", tabBarIcon: ({ color, size }) => (
+        <Ionicons name="home-outline" size={size - 2} color={color} />
       ) }} />
-      <Tabs.Screen name="closet" options={{ title: "衣橱", tabBarIcon: ({ color, size, focused }) => (
-        <View style={{ alignItems: "center" }}>
-          <Ionicons name={focused ? "grid" : "grid-outline"} size={size - 2} color={color} />
-          {focused && <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: Colors.accent, marginTop: 2, shadowColor: Colors.accent, shadowRadius: 4, shadowOpacity: 0.8 }} />}
-        </View>
+      <Tabs.Screen name="closet" options={{ title: "衣橱", tabBarIcon: ({ color, size }) => (
+        <Ionicons name="grid-outline" size={size - 2} color={color} />
       ) }} />
-      <Tabs.Screen name="outfits" options={{ title: "搭配", tabBarIcon: ({ color, size, focused }) => (
-        <View style={{ alignItems: "center" }}>
-          <Ionicons name={focused ? "layers" : "layers-outline"} size={size - 2} color={color} />
-          {focused && <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: Colors.accent, marginTop: 2, shadowColor: Colors.accent, shadowRadius: 4, shadowOpacity: 0.8 }} />}
-        </View>
+      <Tabs.Screen name="outfits" options={{ title: "搭配", tabBarIcon: ({ color, size }) => (
+        <Ionicons name="layers-outline" size={size - 2} color={color} />
       ) }} />
-      <Tabs.Screen name="calendar" options={{ title: "日历", tabBarIcon: ({ color, size, focused }) => (
-        <View style={{ alignItems: "center" }}>
-          <Ionicons name={focused ? "calendar" : "calendar-outline"} size={size - 2} color={color} />
-          {focused && <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: Colors.accent, marginTop: 2, shadowColor: Colors.accent, shadowRadius: 4, shadowOpacity: 0.8 }} />}
-        </View>
+      <Tabs.Screen name="calendar" options={{ title: "日历", tabBarIcon: ({ color, size }) => (
+        <Ionicons name="calendar-outline" size={size - 2} color={color} />
       ) }} />
-      <Tabs.Screen name="settings" options={{ title: "设置", tabBarIcon: ({ color, size, focused }) => (
-        <View style={{ alignItems: "center" }}>
-          <Ionicons name={focused ? "settings" : "settings-outline"} size={size - 2} color={color} />
-          {focused && <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: Colors.accent, marginTop: 2, shadowColor: Colors.accent, shadowRadius: 4, shadowOpacity: 0.8 }} />}
-        </View>
+      <Tabs.Screen name="settings" options={{ title: "我的", tabBarIcon: ({ color, size }) => (
+        <Ionicons name="person-outline" size={size - 2} color={color} />
       ) }} />
     </Tabs>
   );
