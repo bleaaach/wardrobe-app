@@ -52,7 +52,7 @@ export default function ClosetScreen() {
         <Ionicons name="search" size={18} color={Colors.textTertiary} style={{ marginRight: 8 }} />
         <TextInput
           style={S.searchInput}
-          placeholder="搜索衣物..."
+          placeholder="??????..."
           placeholderTextColor={Colors.textTertiary}
           value={query}
           onChangeText={handleSearch}
@@ -89,15 +89,15 @@ export default function ClosetScreen() {
         renderItem={({item}) => (
           <Pressable style={S.item} onPress={() => router.push(`/closet/${item.id}`)}>
             <AsyncImage uri={item.imageUri} style={S.itemImg} />
-            <Text style={S.itemName} numberOfLines={1}>{item.name || "未命名"}</Text>
+            <Text style={S.itemName} numberOfLines={1}>{item.name || "?????"}</Text>
           </Pressable>
         )}
         keyExtractor={item => item.id}
         ListEmptyComponent={
           <View style={S.empty}>
             <Ionicons name="shirt-outline" size={48} color={Colors.textTertiary} />
-            <Text style={S.emptyText}>{query ? "未找到匹配的衣物" : "衣橱空空"}</Text>
-            {!query && <Pressable style={S.emptyBtn} onPress={() => router.push("/closet/add")}><Text style={S.emptyBtnText}>+ 添加</Text></Pressable>}
+            <Text style={S.emptyText}>{query ? "????????????" : "??????"}</Text>
+            {!query && <Pressable style={S.emptyBtn} onPress={() => router.push("/closet/add")}><Text style={S.emptyBtnText}>+ ???</Text></Pressable>}
           </View>
         }
       />

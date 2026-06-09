@@ -45,23 +45,23 @@ const WEEKDAYS = [
 ];
 
 const PARENT_EN_MAP: Record<string, string> = {
-  上装: "TOPS",
-  下装: "BOTTOMS",
-  连体服装: "DRESS",
-  外套: "OUTER",
-  鞋子: "SHOES",
-  包袋: "BAGS",
-  配饰: "ACCESSORIES",
+  ???: "TOPS",
+  ???: "BOTTOMS",
+  ??????: "DRESS",
+  ???: "OUTER",
+  ???: "SHOES",
+  ???: "BAGS",
+  ???: "ACCESSORIES",
 };
 
 const PARENT_ABBR_MAP: Record<string, string> = {
-  上装: "TO",
-  下装: "BT",
-  连体服装: "DR",
-  外套: "CO",
-  鞋子: "SH",
-  包袋: "BG",
-  配饰: "AC",
+  ???: "TO",
+  ???: "BT",
+  ??????: "DR",
+  ???: "CO",
+  ???: "SH",
+  ???: "BG",
+  ???: "AC",
 };
 
 interface DailyClothingEntry {
@@ -263,7 +263,7 @@ export default function HomeScreen() {
                       ) : null}
                     </View>
                     <Text style={S.outfitName}>
-                      {item.name || "未命名"}
+                      {item.name || "?????"}
                     </Text>
                     {item.notes ? (
                       <Text style={S.outfitDesc} numberOfLines={2}>
@@ -358,7 +358,7 @@ export default function HomeScreen() {
                         style={S.pickerGridLabel}
                         numberOfLines={1}
                       >
-                        {item.name || "未命名"}
+                        {item.name || "?????"}
                       </Text>
                     </Pressable>
                   );

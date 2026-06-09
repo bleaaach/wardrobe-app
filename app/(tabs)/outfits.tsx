@@ -70,8 +70,8 @@ export default function OutfitsScreen() {
           return (
             <Pressable style={S.card} onPress={() => router.push(`/outfits/${item.id}`)}>
               <CollagePreview items={items} />
-              <Text style={S.name} numberOfLines={1}>{item.name || "未命名搭配"}</Text>
-              <Text style={S.meta}>{items.length} 件衣物</Text>
+              <Text style={S.name} numberOfLines={1}>{item.name || "????????"}</Text>
+              <Text style={S.meta}>{items.length} ?????</Text>
             </Pressable>
           );
         }}
@@ -79,8 +79,8 @@ export default function OutfitsScreen() {
         ListEmptyComponent={
           <EmptyState
             icon="layers-outline"
-            title="还没有搭配"
-            action={{ label: "创建搭配", onPress: () => router.push("/outfits/create") }}
+            title="????????"
+            action={{ label: "??????", onPress: () => router.push("/outfits/create") }}
           />
         }
       />

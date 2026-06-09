@@ -33,19 +33,19 @@ export default function TabLayout() {
         headerShown: false,
       }}
     >
-      <Tabs.Screen name="index" options={{ title: "首页", tabBarIcon: ({ color, size }) => (
+      <Tabs.Screen name="index" options={{ title: "棣栭〉", tabBarIcon: ({ color, size }) => (
         <Ionicons name="home-outline" size={size - 2} color={color} />
       ) }} />
-      <Tabs.Screen name="closet" options={{ title: "衣橱", tabBarIcon: ({ color, size }) => (
+      <Tabs.Screen name="closet" options={{ title: "琛ｆ┍", tabBarIcon: ({ color, size }) => (
         <Ionicons name="grid-outline" size={size - 2} color={color} />
       ) }} />
-      <Tabs.Screen name="outfits" options={{ title: "搭配", tabBarIcon: ({ color, size }) => (
+      <Tabs.Screen name="outfits" options={{ title: "鎼厤", tabBarIcon: ({ color, size }) => (
         <Ionicons name="layers-outline" size={size - 2} color={color} />
       ) }} />
-      <Tabs.Screen name="calendar" options={{ title: "日历", tabBarIcon: ({ color, size }) => (
+      <Tabs.Screen name="calendar" options={{ title: "鏃ュ巻", tabBarIcon: ({ color, size }) => (
         <Ionicons name="calendar-outline" size={size - 2} color={color} />
       ) }} />
-      <Tabs.Screen name="settings" options={{ title: "我的", tabBarIcon: ({ color, size }) => (
+      <Tabs.Screen name="settings" options={{ title: "鎴戠殑", tabBarIcon: ({ color, size }) => (
         <Ionicons name="person-outline" size={size - 2} color={color} />
       ) }} />
     </Tabs>

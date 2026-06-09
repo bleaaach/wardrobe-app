@@ -101,9 +101,9 @@ export default function CalendarScreen() {
   const handleDeleteLog = async () => {
     const log = await getDailyLogByDate(selected);
     if (!log) return;
-    Alert.alert("删除记录", "确定要删除这天的穿搭记录吗？", [
-      { text: "取消", style: "cancel" },
-      { text: "删除", style: "destructive", onPress: async () => {
+    Alert.alert("鍒犻櫎璁板綍", "纭畾瑕佸垹闄よ繖澶╃殑绌挎惌璁板綍鍚楋紵", [
+      { text: "鍙栨秷", style: "cancel" },
+      { text: "鍒犻櫎", style: "destructive", onPress: async () => {
         await deleteDailyLog(log.id);
         await load();
       }},
@@ -222,15 +222,15 @@ export default function CalendarScreen() {
             </ScrollView>
             <Pressable style={({ pressed }) => [S.editLogBtn, pressed && { opacity: PressedOpacity }]} onPress={() => router.push(`/calendar/log?date=${selected}`)}>
               <Ionicons name="create-outline" size={14} color={Colors.textInverse} />
-              <Text style={S.editLogBtnText}>编辑记录</Text>
+              <Text style={S.editLogBtnText}>缂栬緫璁板綍</Text>
             </Pressable>
           </>
         ) : (
           <View style={S.emptyDay}>
-            <Text style={S.emptyDayText}>暂无记录</Text>
+            <Text style={S.emptyDayText}>鏆傛棤璁板綍</Text>
             <Pressable style={({ pressed }) => [S.addPhotoBtn, pressed && { opacity: PressedOpacity }]} onPress={() => router.push(`/calendar/log?date=${selected}`)}>
               <Ionicons name="add" size={16} color={Colors.textInverse} />
-              <Text style={S.addPhotoBtnText}>添加记录</Text>
+              <Text style={S.addPhotoBtnText}>娣诲姞璁板綍</Text>
             </Pressable>
           </View>
         )}

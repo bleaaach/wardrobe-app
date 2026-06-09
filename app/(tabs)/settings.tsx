@@ -17,14 +17,14 @@ import { DailyLog } from "../../src/types";
 import { PageTransition } from "../../src/components/PageTransition";
 import { Colors, Spacing, Radius, FontSize, TouchMin } from "../../src/design/tokens";
 
-/* ─── helpers ─── */
+/* ?�?�?� helpers ?�?�?� */
 function parsePrice(p: string): number {
   const n = parseFloat(String(p).replace(/[^0-9.]/g, ""));
   return isNaN(n) ? 0 : n;
 }
 
 function formatCurrency(n: number): string {
-  return "¥" + Math.round(n).toLocaleString();
+  return "?" + Math.round(n).toLocaleString();
 }
 
 function calculateStreak(logs: DailyLog[]): number {
@@ -50,7 +50,7 @@ function calculateStreak(logs: DailyLog[]): number {
   return streak;
 }
 
-/* ─── sub-components ─── */
+/* ?�?�?� sub-components ?�?�?� */
 function StatItem({ value, label, onPress }: { value: string; label: string; onPress?: () => void }) {
   return (
     <Pressable style={{ alignItems: "center" }} onPress={onPress}>
@@ -101,7 +101,7 @@ function SectionTitle({ title }: { title: string }) {
   return <Text style={S.sectionTitle}>{title}</Text>;
 }
 
-/* ─── floating item with animation ─── */
+/* ?�?�?� floating item with animation ?�?�?� */
 function FloatItem({
   style,
   children,
@@ -154,7 +154,7 @@ function FloatItem({
   );
 }
 
-/* ─── main screen ─── */
+/* ?�?�?� main screen ?�?�?� */
 export default function SettingsScreen() {
   const router = useRouter();
   const items = useClothingStore((s) => s.items);
@@ -195,7 +195,7 @@ export default function SettingsScreen() {
   return (
     <PageTransition>
     <ScrollView style={S.container} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
-      {/* ── Floating Items + Brand ── */}
+      {/* ?�?� Floating Items + Brand ?�?� */}
       <View style={S.meHeader}>
         <View style={S.floatingItems}>
           <FloatItem style={{ top: 10, left: 30 }} delay={0}>
@@ -221,44 +221,44 @@ export default function SettingsScreen() {
         <Text style={S.brandSub}>Curating since {new Date().getFullYear()}</Text>
       </View>
 
-      {/* ── Stats Row ── */}
+      {/* ?�?� Stats Row ?�?� */}
       <View style={S.statsRow}>
         <StatItem value={String(summary.total)} label="Items" onPress={() => router.push("/settings/statistics")} />
         <StatItem value={String(outfitCount)} label="Outfits" onPress={() => router.push("/settings/statistics")} />
         <StatItem value={String(streak)} label="Streak" onPress={() => router.push("/settings/statistics")} />
       </View>
 
-      {/* ── Backup ── */}
+      {/* ?�?� Backup ?�?� */}
       <SectionTitle title="Backup" />
       <SectionCard>
-        <SettingRow icon="save-outline" title="备份与恢复" subtitle="导出、导入、云同步、清空数据" onPress={() => router.push("/settings/backup")} />
+        <SettingRow icon="save-outline" title="???????�" subtitle="????????�????????????�" onPress={() => router.push("/settings/backup")} />
       </SectionCard>
 
-      {/* ── Stats ── */}
+      {/* ?�?� Stats ?�?� */}
       <SectionTitle title="Stats" />
       <SectionCard>
-        <SettingRow icon="bar-chart-outline" title="统计信息" subtitle="查看衣橱数据洞察" value="查看" onPress={() => router.push("/settings/statistics")} />
+        <SettingRow icon="bar-chart-outline" title="??????" subtitle="????????????" value="???" onPress={() => router.push("/settings/statistics")} />
       </SectionCard>
 
-      {/* ── Manage ── */}
+      {/* ?�?� Manage ?�?� */}
       <SectionTitle title="Manage" />
       <SectionCard>
-        <SettingRow icon="folder-open-outline" title="分类管理" subtitle="管理衣物分类与标签" onPress={() => router.push("/settings/categories")} />
-        <SettingRow icon="archive-outline" title="回收站" subtitle="查看已删除的衣物" onPress={() => router.push("/settings/archive")} />
+        <SettingRow icon="folder-open-outline" title="??????" subtitle="?????????????�" onPress={() => router.push("/settings/categories")} />
+        <SettingRow icon="archive-outline" title="????�" subtitle="????????????" onPress={() => router.push("/settings/archive")} />
       </SectionCard>
 
-      {/* ── Preferences ── */}
+      {/* ?�?� Preferences ?�?� */}
       <SectionTitle title="Preferences" />
       <SectionCard>
-        <SettingRow icon="cash-outline" title="显示价格" subtitle="在衣物列表中展示价格" rightElement={<SwitchControl value={showPrice} onChange={setShowPrice} />} />
-        <SettingRow icon="notifications-outline" title="每日提醒" subtitle="每日推送穿搭建议" rightElement={<SwitchControl value={dailyReminder} onChange={setDailyReminder} />} />
+        <SettingRow icon="cash-outline" title="??????" subtitle="???????????????" rightElement={<SwitchControl value={showPrice} onChange={setShowPrice} />} />
+        <SettingRow icon="notifications-outline" title="??????" subtitle="?????�??????�" rightElement={<SwitchControl value={dailyReminder} onChange={setDailyReminder} />} />
       </SectionCard>
 
-      {/* ── About ── */}
+      {/* ?�?� About ?�?� */}
       <SectionTitle title="About" />
       <SectionCard>
-        <SettingRow icon="information-circle-outline" title="版本" value="v1.0" />
-        <SettingRow icon="document-text-outline" title="开源许可" subtitle="第三方库许可证" onPress={() => Alert.alert("开源许可", "开发中")} />
+        <SettingRow icon="information-circle-outline" title="???" value="v1.0" />
+        <SettingRow icon="document-text-outline" title="?�????�" subtitle="??????????�" onPress={() => Alert.alert("?�????�", "?�???")} />
       </SectionCard>
 
       <Text style={S.footer}>WARDROBE &middot; V1.0</Text>
@@ -268,7 +268,7 @@ export default function SettingsScreen() {
   );
 }
 
-/* ─── styles ─── */
+/* ?�?�?� styles ?�?�?� */
 const S = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bg },
 

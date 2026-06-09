@@ -56,16 +56,16 @@ export default function CategoriesScreen() {
   const handleDelete = (id: string, name: string) => {
     const hasChildren = categories.some((c) => c.parentId === id);
     if (hasChildren) {
-      Alert.alert("无法删除", "该分类下还有子分类，请先删除子分类。");
+      Alert.alert("??????", "??????????????????????????��");
       return;
     }
     const count = items.filter((i) => i.categoryId === id).length;
     const msg = count > 0
-      ? `该分类下有 ${count} 件衣物，删除后这些衣物将变为"未分类"状态。确定删除吗？`
-      : "确定删除此分类吗？";
-    Alert.alert("删除分类", msg, [
-      { text: "取消", style: "cancel" },
-      { text: "删除", style: "destructive", onPress: async () => { await deleteCat(id); } },
+      ? `???????� ${count} ?????????????????????"????�"??�?�?�????????
+      : "?????????????�";
+    Alert.alert("??????", msg, [
+      { text: "???", style: "cancel" },
+      { text: "???", style: "destructive", onPress: async () => { await deleteCat(id); } },
     ]);
   };
 
@@ -127,7 +127,7 @@ export default function CategoriesScreen() {
                 style={[styles.chip, newParent === null && styles.chipActive]}
                 onPress={() => setNewParent(null)}
               >
-                <Text style={[styles.chipText, newParent === null && styles.chipTextActive]}>一级分类</Text>
+                <Text style={[styles.chipText, newParent === null && styles.chipTextActive]}>?�????�</Text>
               </Pressable>
               {parents.map((p) => (
                 <Pressable
@@ -162,7 +162,7 @@ export default function CategoriesScreen() {
                         style={[styles.chip, editParent === null && styles.chipActive]}
                         onPress={() => setEditParent(null)}
                       >
-                        <Text style={[styles.chipText, editParent === null && styles.chipTextActive]}>一级</Text>
+                        <Text style={[styles.chipText, editParent === null && styles.chipTextActive]}>?�?�</Text>
                       </Pressable>
                       {parents.filter((p) => p.id !== parent.id).map((p) => (
                         <Pressable
@@ -233,7 +233,7 @@ export default function CategoriesScreen() {
                             <Text style={styles.subName}>{sub.name}</Text>
                           </View>
                           <View style={styles.subActions}>
-                            <Text style={styles.subCount}>{count} 件衣物</Text>
+                            <Text style={styles.subCount}>{count} ????�</Text>
                             <Pressable onPress={() => startEdit(sub)} style={styles.subActionBtn}>
                               <Text style={styles.subActionText}>Edit</Text>
                             </Pressable>

@@ -41,3 +41,7 @@ yarn-error.*
 /android
 %APPDATA%/
 dist/
+
+*.apk
+expo-start.log
+ssh_*.py
